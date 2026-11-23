@@ -12,6 +12,8 @@
     <!-- Nom distinct de LocalConvert.exe : Windows ne distingue pas les majuscules, les deux exe s'écraseraient. -->
     <AssemblyName>localconvert-cli</AssemblyName>
     <RootNamespace>AllInOne.Cli</RootNamespace>
+    <!-- Même icône que l'application dans l'Explorateur Windows. -->
+    <ApplicationIcon>..\..\assets\icon\localconvert.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

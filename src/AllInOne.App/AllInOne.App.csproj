@@ -10,7 +10,7 @@
     <!-- Liaisons par réflexion dans les modèles XAML (plus simple que les liaisons compilées pour ces petites listes). -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- Icône de l'exécutable Windows (source : assets/icon/localconvert.svg). -->
+    <!-- Icône de l'exécutable Windows (source : assets/icon/localconvert.svg, .ico regénéré par make-ico.py). -->
     <ApplicationIcon>..\..\assets\icon\localconvert.ico</ApplicationIcon>
     <!-- Avalonia annote plus de propriétés comme « nullables » que WPF (Text, Tag…) : avertissements sans conséquence ici. -->
     <NoWarn>$(NoWarn);CA1416;CS8600;CS8602;CS8604</NoWarn>

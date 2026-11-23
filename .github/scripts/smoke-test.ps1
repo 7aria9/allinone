@@ -2,9 +2,20 @@
 # puis se fermer d'elle-même avec le code 0. En cas d'échec, affiche le journal et l'Observateur d'événements.
 param([string[]] $Folders)
 
+# Nombre d'icônes intégrées à un exe (0 = l'Explorateur affiche l'icône générique).
+Add-Type -Namespace LocalConvert -Name Shell -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+public static extern uint ExtractIconEx(string file, int index, System.IntPtr[] large, System.IntPtr[] small, uint count);
+'@
+
 $failed = $false
 foreach ($folder in $Folders) {
     $exe = Join-Path $folder 'LocalConvert.exe'
+    foreach ($withIcon in @($exe, (Join-Path $folder 'localconvert-cli.exe'))) {
+        $icons = [LocalConvert.Shell]::ExtractIconEx((Resolve-Path $withIcon).Path, -1, $null, $null, 0)
+        if ($icons -lt 1) { Write-Host "::error::$withIcon ne contient pas d'icône"; $failed = $true }
+        else { Write-Host "OK : icône intégrée à $withIcon" }
+    }
     Write-Host "== Démarrage de $exe"
     $p = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -PassThru -RedirectStandardError "$folder-stderr.txt"
     $null = $p.Handle  # nécessaire pour lire ExitCode ensuite
