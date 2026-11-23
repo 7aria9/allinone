@@ -28,18 +28,26 @@ Prérequis : Windows 10/11 et le [SDK .NET 8](https://dotnet.microsoft.com/downl
 dotnet run --project src/AllInOne.App
 ```
 
-Pour obtenir un `.exe` autonome (sans installer .NET sur le poste cible) :
+Pour obtenir un dossier prêt à copier (`AllInOne.exe` avec ses DLL à côté) :
 
 ```powershell
-dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+dotnet publish src/AllInOne.App -c Release -o publish
 ```
 
-L'intégration continue GitHub Actions produit aussi ces exécutables (artefact `AllInOne-win-x64`).
+La compilation produit volontairement **plusieurs fichiers** (exe + DLL) plutôt qu'un seul exe géant, et ne garde que les
+bibliothèques natives Windows x64. Par défaut, elle dépend du runtime .NET installé ; ajoutez `--self-contained true` pour
+embarquer .NET (dossier environ 4 fois plus lourd, mais rien à installer).
 
 **Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
-[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux exécutables Windows autonomes :
-`AllInOne-<version>-win-x64.exe` (application) et `allinone-cli-<version>-win-x64.exe` (ligne de commande).
-Aucune installation de .NET n'est nécessaire pour les lancer.
+[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux archives, contenant chacune
+`AllInOne.exe`, `allinone.exe` (ligne de commande) et leurs DLL :
+
+| Archive | Taille (zip / décompressé) | Prérequis |
+| --- | --- | --- |
+| `AllInOne-<version>-win-x64.zip` (légère) | ≈ 21 Mo / 48 Mo | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
+| `AllInOne-<version>-win-x64-autonome.zip` | ≈ 86 Mo / 194 Mo | aucun |
+
+L'essentiel du poids restant vient des moteurs natifs : ImageMagick (≈ 25 Mo), SkiaSharp (≈ 12 Mo) et PDFium (≈ 7 Mo).
 
 L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, cartes arrondies, barre de titre sombre) avec une navigation latérale entre les quatre outils :
 

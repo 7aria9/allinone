@@ -27,10 +27,10 @@ jobs:
           dotnet-version: 8.0.x
       - name: Tests (Windows)
         run: dotnet test tests/AllInOne.Core.Tests -c Release
-      - name: Publication de l'application de bureau
-        run: dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/app
-      - name: Publication de la ligne de commande
-        run: dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/cli
+      - name: Publication (application + ligne de commande, DLL à côté des exe)
+        run: |
+          dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained false -p:DebugType=none -o publish
+          dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained false -p:DebugType=none -o publish
       - uses: actions/upload-artifact@v4
         with:
           name: AllInOne-win-x64

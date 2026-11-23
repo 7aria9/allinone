@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <!-- Ne copie que les ressources localisées en français (les paquets en livrent une dizaine de langues). -->
+    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!--
+    Les paquets natifs (SkiaSharp notamment) livrent des fichiers .pdb de débogage énormes
+    (libSkiaSharp.pdb fait environ 90 Mo). Ils ne servent pas à l'exécution : on les retire
+    de la sortie de compilation et de publication.
+  -->
+  <Target Name="AllInOneRemoveNativePdbsFromPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_AllInOneNativePdbPublished Include="$(PublishDir)**\libSkiaSharp.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_AllInOneNativePdbPublished)" />
+  </Target>
+  <Target Name="AllInOneRemoveNativePdbsFromBuild" AfterTargets="Build">
+    <ItemGroup>
+      <_AllInOneNativePdb Include="$(OutDir)**\libSkiaSharp.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_AllInOneNativePdb)" />
+  </Target>
+</Project>

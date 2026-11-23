@@ -1,7 +1,9 @@
 name: release
 
-# Publie une release GitHub avec les .exe Windows à chaque fusion dans main
-# (une pull request validée = un push sur main).
+# Publie une release GitHub à chaque fusion dans main (une pull request validée = un push sur main).
+# Deux archives zip, avec AllInOne.exe, allinone.exe (ligne de commande) et leurs DLL côte à côte :
+#  - AllInOne-<version>-win-x64.zip           : légère, nécessite le runtime « .NET 8 Desktop Runtime » ;
+#  - AllInOne-<version>-win-x64-autonome.zip  : plus lourde, inclut .NET (rien à installer).
 on:
   push:
     branches: [main]
@@ -30,18 +32,21 @@ jobs:
       - name: Tests
         run: dotnet test tests/AllInOne.Core.Tests -c Release
 
-      - name: Publication de l'application de bureau
-        run: dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ env.VERSION }} -o publish/app
-
-      - name: Publication de la ligne de commande
-        run: dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ env.VERSION }} -o publish/cli
-
-      - name: Préparation des fichiers
+      - name: Publication
         shell: pwsh
         run: |
+          $common = @('-c', 'Release', '-r', 'win-x64', '-p:DebugType=none', "-p:Version=$env:VERSION")
+          foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
+            $out = "publish/$($mode.Name)"
+            dotnet publish src/AllInOne.App @common --self-contained $($mode.SelfContained) -o $out
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            dotnet publish src/AllInOne.Cli @common --self-contained $($mode.SelfContained) -o $out
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           New-Item -ItemType Directory -Force release | Out-Null
-          Copy-Item publish/app/AllInOne.exe "release/AllInOne-$env:VERSION-win-x64.exe"
-          Copy-Item publish/cli/allinone.exe "release/allinone-cli-$env:VERSION-win-x64.exe"
+          Compress-Archive -Path publish/leger/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64.zip"
+          Compress-Archive -Path publish/autonome/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64-autonome.zip"
+          Get-ChildItem release | Format-Table Name, Length
 
       - name: Création de la release
         shell: pwsh
@@ -49,5 +54,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "v$env:VERSION"
-          $title = "AllInOne $env:VERSION"
-          gh release create $tag (Get-ChildItem release/*.exe).FullName --title $title --target $env:GITHUB_SHA --generate-notes
+          $notes = @"
+          **Téléchargement**
+          - ``AllInOne-$env:VERSION-win-x64.zip`` : version légère. Nécessite le [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque).
+          - ``AllInOne-$env:VERSION-win-x64-autonome.zip`` : version autonome, plus lourde, rien à installer.
+
+          Décompressez l'archive puis lancez ``AllInOne.exe`` (``allinone.exe`` pour la ligne de commande).
+          "@
+          gh release create $tag (Get-ChildItem release/*.zip).FullName --title "AllInOne $env:VERSION" --target $env:GITHUB_SHA --notes $notes --generate-notes
