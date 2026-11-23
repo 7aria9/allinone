@@ -43,8 +43,10 @@ if command -v codesign >/dev/null 2>&1; then
   codesign --verify --deep --strict "$app"
 else
   rcodesign sign "$app"
+  # « rcodesign verify » ne sait pas lire les signatures ad hoc (pas de CMS) : on affiche
+  # simplement la signature des exécutables, ce qui échoue s'ils n'en ont pas.
   for exe in LocalConvert localconvert-cli; do
-    rcodesign verify "$app/Contents/MacOS/$exe"
+    rcodesign print-signature-info "$app/Contents/MacOS/$exe" | head -20
   done
 fi
 
