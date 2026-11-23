@@ -121,6 +121,10 @@ when the text contains values. Text written directly in `.axaml` files is transl
 translations are in `src/AllInOne.Core/Localization/en.json`, `de.json` and `es.json`. A test fails when a text has no
 translation.
 
+## Licence
+
+LocalConvert is released under the [MIT licence](LICENSE).
+
 ## Libraries and licences
 
 | Library | Used for | Licence |

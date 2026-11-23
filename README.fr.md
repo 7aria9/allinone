@@ -139,6 +139,10 @@ localconvert-cli audio sortie/ concert.wav --format mp3 --start 1:30 --end 4:05
 localconvert-cli convert sortie/ IMG_0001.HEIC IMG_0002.HEIC --format jpg
 ```
 
+## Licence
+
+LocalConvert est distribué sous [licence MIT](LICENSE).
+
 ## Bibliothèques utilisées et licences
 
 Toutes les dépendances sont sous licence permissive, compatibles avec un usage personnel ou commercial :
