@@ -2,6 +2,7 @@ using System.Globalization;
 using AllInOne.Core;
 using AllInOne.Core.Images;
 using AllInOne.Core.Pdf;
+using AllInOne.Core.Video;
 
 namespace AllInOne.Cli;
 
@@ -25,6 +26,8 @@ public static class Program
           split      <entrée.pdf> <dossier>
           pdf2img    <entrée.pdf> <dossier> [--format png|jpg|bmp|gif|tiff|webp] [--dpi 150] [--pages 1-3] [--quality 90]
           convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp [--quality 90] [--max-width px] [--max-height px]
+          video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov [--quality haute|moyenne|faible]
+                     [--max-height 720] [--no-audio] [--copy]   (nécessite FFmpeg dans le PATH)
           info       <entrée.pdf>
         """;
 
@@ -154,6 +157,28 @@ public static class Program
                 Console.WriteLine($"{files.Count} image(s) convertie(s) dans {a.Positional[0]}");
                 break;
             }
+            case "video":
+            {
+                a.Require(2, "video <dossier> <vidéo...> --format <format>");
+                var format = VideoFormats.Parse(a.Get("format") ?? throw new ArgumentException("--format est obligatoire."));
+                var options = new VideoConversionOptions
+                {
+                    Quality = VideoFormats.ParseQuality(a.Get("quality") ?? "moyenne"),
+                    MaxHeight = a.Get("max-height") is { } h ? Int(h) : null,
+                    RemoveAudio = a.Flag("no-audio"),
+                    CopyStreams = a.Flag("copy"),
+                };
+                var lastPercent = -1;
+                var progress = new Progress<double>(v =>
+                {
+                    var percent = (int)(v * 100);
+                    if (percent != lastPercent) { lastPercent = percent; Console.Write($"\r{percent,3} %"); }
+                });
+                var files = VideoConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options, progress,
+                    status: new Progress<string>(m => Console.Write("\r" + m + Environment.NewLine))).GetAwaiter().GetResult();
+                Console.WriteLine($"\r{files.Count} vidéo(s) convertie(s) dans {a.Positional[0]}");
+                break;
+            }
             case "info":
             {
                 a.Require(1, "info <entrée.pdf>");
@@ -201,7 +226,7 @@ public static class Program
 /// <summary>Arguments : valeurs positionnelles, options « --nom valeur » / « -o valeur » et drapeaux « --nom ».</summary>
 internal sealed class Args
 {
-    private static readonly HashSet<string> Flags = new() { "no-enlarge" };
+    private static readonly HashSet<string> Flags = new() { "no-enlarge", "no-audio", "copy" };
     private readonly Dictionary<string, string?> _options = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Positional { get; } = new();
 

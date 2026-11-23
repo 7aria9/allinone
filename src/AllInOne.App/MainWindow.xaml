@@ -21,6 +21,8 @@
         <Border DockPanel.Dock="Bottom" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}"
                 BorderThickness="0,1,0,0" Padding="18,7">
             <DockPanel>
+                <Button x:Name="CancelButton" DockPanel.Dock="Right" Content="Arrêter" Click="Cancel_Click"
+                        Visibility="Collapsed" Padding="10,3" Margin="10,0,0,0" />
                 <ProgressBar x:Name="Progress" DockPanel.Dock="Right" Style="{StaticResource ThinBar}" Width="200"
                              VerticalAlignment="Center" Visibility="Collapsed" />
                 <TextBlock x:Name="StatusText" Text="Prêt." Foreground="{StaticResource TextDim}" VerticalAlignment="Center"
@@ -37,6 +39,7 @@
                 <RadioButton Style="{StaticResource NavButton}" Content="📄   Modifier / fusionner" Tag="1" Checked="Nav_Checked" />
                 <RadioButton Style="{StaticResource NavButton}" Content="🧩   PDF → images" Tag="2" Checked="Nav_Checked" />
                 <RadioButton Style="{StaticResource NavButton}" Content="🔁   Convertir des images" Tag="3" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🎬   Convertir des vidéos" Tag="4" Checked="Nav_Checked" />
             </StackPanel>
         </Border>
 
@@ -46,6 +49,7 @@
             <views:PdfEditorView Visibility="Collapsed" />
             <views:PdfToImagesView Visibility="Collapsed" />
             <views:ConvertImagesView Visibility="Collapsed" />
+            <views:ConvertVideosView Visibility="Collapsed" />
         </Grid>
     </DockPanel>
 </Window>

@@ -17,34 +17,60 @@ public partial class MainWindow : Window
             Pages.Children[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private CancellationTokenSource? _cancel;
+
     /// <summary>
     /// Exécute une tâche longue en arrière-plan : désactive l'interface, affiche la progression
     /// et présente les erreurs à l'utilisateur. Renvoie true si la tâche s'est terminée sans erreur.
+    /// Avec <paramref name="cancellable"/>, un bouton « Arrêter » permet d'interrompre la tâche
+    /// (le jeton est passé en second paramètre de <paramref name="work"/>).
     /// </summary>
-    public async Task<bool> RunBusyAsync(string message, Func<IProgress<double>, Task> work, string? successMessage = null)
+    public Task<bool> RunBusyAsync(string message, Func<IProgress<double>, Task> work, string? successMessage = null) =>
+        RunBusyAsync(message, (p, _) => work(p), successMessage, cancellable: false);
+
+    public async Task<bool> RunBusyAsync(string message, Func<IProgress<double>, CancellationToken, Task> work,
+        string? successMessage, bool cancellable)
     {
         Pages.IsEnabled = Nav.IsEnabled = false;
         StatusText.Text = message;
         Progress.Value = 0;
         Progress.Visibility = Visibility.Visible;
+        _cancel = new CancellationTokenSource();
+        CancelButton.Visibility = cancellable ? Visibility.Visible : Visibility.Collapsed;
+        CancelButton.IsEnabled = true;
         var progress = new Progress<double>(v => Progress.Value = v);
         try
         {
-            await work(progress);
+            await work(progress, _cancel.Token);
             StatusText.Text = successMessage ?? "Terminé.";
             return true;
         }
+        catch (OperationCanceledException)
+        {
+            StatusText.Text = "Arrêté.";
+            return false;
+        }
         catch (Exception ex)
         {
-            StatusText.Text = "Échec : " + ex.Message;
+            StatusText.Text = "Échec : " + ex.Message.Split('\n')[0];
             Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
         finally
         {
+            _cancel.Dispose();
+            _cancel = null;
+            CancelButton.Visibility = Visibility.Collapsed;
             Progress.Visibility = Visibility.Collapsed;
             Pages.IsEnabled = Nav.IsEnabled = true;
         }
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        _cancel?.Cancel();
+        CancelButton.IsEnabled = false;
+        StatusText.Text = "Arrêt en cours…";
     }
 
     public void SetStatus(string text) => StatusText.Text = text;
