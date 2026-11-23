@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon/localconvert-128.png" width="96" alt="Icône de LocalConvert"></p>
+
 # LocalConvert : convertisseur de fichiers hors ligne (C# / .NET 8)
 
 *[English version](README.md)*
@@ -138,6 +140,10 @@ localconvert-cli frames sortie/ clip.mov                                        
 localconvert-cli audio sortie/ concert.wav --format mp3 --start 1:30 --end 4:05
 localconvert-cli convert sortie/ IMG_0001.HEIC IMG_0002.HEIC --format jpg
 ```
+
+## Licence
+
+LocalConvert est distribué sous [licence MIT](LICENSE).
 
 ## Bibliothèques utilisées et licences
 

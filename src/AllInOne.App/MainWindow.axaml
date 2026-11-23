@@ -3,13 +3,15 @@
         xmlns:views="clr-namespace:AllInOne.App.Views"
         x:Class="AllInOne.App.MainWindow"
         Title="LocalConvert : PDF, images, vidéos et sons" Width="1180" Height="780" MinWidth="860" MinHeight="540"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" Icon="avares://LocalConvert/Assets/localconvert.ico">
     <DockPanel>
         <!-- En-tête -->
         <Border DockPanel.Dock="Top" Background="{StaticResource HeaderGradient}" Padding="24,16,24,14">
             <DockPanel>
                 <ComboBox x:Name="LanguageBox" DockPanel.Dock="Right" VerticalAlignment="Center" MinWidth="130"
                           ToolTip.Tip="Langue de l'application" />
+                <Image DockPanel.Dock="Left" Source="avares://LocalConvert/Assets/localconvert-128.png" Width="56" Height="56"
+                       Margin="-6,0,8,0" VerticalAlignment="Center" />
                 <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="LOCAL" FontSize="28" FontWeight="Black" />
