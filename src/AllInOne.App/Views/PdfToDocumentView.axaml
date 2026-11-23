@@ -1,0 +1,65 @@
+<UserControl x:Class="AllInOne.App.Views.PdfToDocumentView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="340" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.ColumnSpan="2" Text="PDF → Word, ODT ou texte" Classes="pageTitle" />
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="hint"
+                   Text="Récupère le texte de tes PDF dans un document modifiable : Word (.docx), LibreOffice (.odt) ou texte brut (.txt). Tout se fait sur ton ordinateur : rien n'est envoyé sur Internet." />
+
+        <Border Grid.Row="2" Classes="card" Margin="0,0,16,0">
+            <DockPanel>
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <Button Content="＋  Ajouter des PDF" Classes="primary" Click="Add_Click" />
+                    <Button Content="🗑  Retirer" Click="Remove_Click" />
+                    <Button Content="Vider" Classes="ghost" Click="Clear_Click" />
+                </WrapPanel>
+                <Grid>
+                    <TextBlock x:Name="EmptyHint" Classes="dropHint" Text="Dépose tes PDF ici" />
+                    <ListBox x:Name="Files" Classes="cards" SelectionMode="Multiple"
+                             ItemTemplate="{StaticResource MediaItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                </Grid>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="2" Grid.Column="1" Classes="card">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="FORMAT" Classes="section" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Label Content="Créer" />
+                        <ComboBox Grid.Column="1" x:Name="Format" SelectedIndex="0" Margin="0,0,0,8" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="Word (.docx)" Tag="Docx" />
+                            <ComboBoxItem Content="OpenDocument (.odt, LibreOffice)" Tag="Odt" />
+                            <ComboBoxItem Content="Texte brut (.txt)" Tag="Txt" />
+                        </ComboBox>
+                    </Grid>
+                    <TextBlock Classes="note"
+                               Text="Le texte, les paragraphes, les titres et le gras sont repris, une page du PDF par page. Les images, les tableaux et la mise en page exacte ne le sont pas. Un PDF scanné (pages en image) n'a pas de texte à récupérer." />
+
+                    <TextBlock Text="DESTINATION" Classes="section" Margin="0,18,0,10" />
+                    <DockPanel Margin="0,0,0,18">
+                        <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowseOutput_Click" Margin="8,0,0,0" />
+                        <TextBox x:Name="OutputDir" />
+                    </DockPanel>
+
+                    <Button Content="📝  Convertir" Classes="primary" Click="Convert_Click"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="14,10" FontSize="14" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

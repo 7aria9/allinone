@@ -14,6 +14,7 @@ Elle permet de :
 - **compresser un PDF** (scans, documents pleins de photos) en réduisant ses images, sans toucher au texte ;
 - **découper un PDF** : une page par fichier, toutes les N pages ou selon des plages (« 1-3, 4-7, 8- ») ;
 - **convertir un PDF en images** (PNG, JPEG, WebP, BMP, GIF, TIFF, résolution au choix) ;
+- **convertir un PDF en Word, ODT ou texte** (.docx, .odt, .txt) : texte, paragraphes, titres et gras, sans la mise en page exacte ;
 - **convertir des images d'un format à un autre** (PNG, JPEG, WebP, AVIF, BMP, GIF, TIFF), avec redimensionnement optionnel. Les photos **HEIC** des iPhone sont lues partout (conversion, images → PDF) ;
 - **convertir des sons** en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A (et extraire le son d'une vidéo) ;
 - **convertir des vidéos** en MP4, MKV, WebM, AVI, OGG, MOV ou **GIF animé** (qualité, résolution maximale, suppression du son, changement de conteneur sans réencodage) ;
@@ -85,10 +86,11 @@ L'interface a un thème sombre (dégradé rose → violet, cartes arrondies) ave
 3. **Compresser un PDF** : ajoutez un ou plusieurs PDF et choisissez le niveau (légère 200 ppp, moyenne 150 ppp, forte 100 ppp). Les images sont réduites et recompressées en JPEG ; le texte et les dessins restent vectoriels. Chaque ligne montre la taille avant et après. Un PDF déjà optimisé est simplement copié.
 4. **Découper un PDF** : une page par fichier, toutes les N pages, ou selon des plages où chaque plage donne un fichier (`1-3, 4-7, 8-`).
 5. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
-6. **Convertir des images** : convertissez un lot d'images (dont HEIC) vers un autre format, avec largeur/hauteur maximales optionnelles.
-7. **Vidéos et GIF** : ajoutez ou glissez des vidéos (ou des GIF), choisissez le format, dont le GIF animé, la qualité et la résolution maximale. Les champs Début et Fin gardent seulement un extrait (ex. de `1:30` à `2:45`). Les formats « Images PNG » et « Images JPEG » extraient les images de la vidéo (toutes, ou 1 par seconde, 1 toutes les 5 s…) dans un dossier `<nom>_images` ; au-delà d'environ 3 000 images, une confirmation est demandée. Un bouton « Arrêter » interrompt la conversion.
+6. **PDF → Word / texte** : récupérez le texte de vos PDF dans un document modifiable, Word (.docx), OpenDocument (.odt, LibreOffice) ou texte brut (.txt). Les paragraphes, les titres et le gras sont repris, une page du PDF par page. Les images, les tableaux et la mise en page exacte ne le sont pas ; un PDF scanné (pages en image) n'a pas de texte à récupérer, car il n'y a pas de reconnaissance de caractères (OCR).
+7. **Convertir des images** : convertissez un lot d'images (dont HEIC) vers un autre format, avec largeur/hauteur maximales optionnelles.
+8. **Vidéos et GIF** : ajoutez ou glissez des vidéos (ou des GIF), choisissez le format, dont le GIF animé, la qualité et la résolution maximale. Les champs Début et Fin gardent seulement un extrait (ex. de `1:30` à `2:45`). Les formats « Images PNG » et « Images JPEG » extraient les images de la vidéo (toutes, ou 1 par seconde, 1 toutes les 5 s…) dans un dossier `<nom>_images` ; au-delà d'environ 3 000 images, une confirmation est demandée. Un bouton « Arrêter » interrompt la conversion.
    Chaque ligne affiche les caractéristiques du fichier (durée, résolution, codecs, images/s, débit, taille) puis, pendant la conversion, sa propre barre de progression et le temps restant estimé. Un fichier en échec n'arrête pas les suivants.
-8. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio. Début et Fin permettent de couper un extrait. Comme pour les vidéos, chaque ligne montre durée, codec, débit, fréquence, canaux et taille, puis l'avancement et le temps restant.
+9. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio. Début et Fin permettent de couper un extrait. Comme pour les vidéos, chaque ligne montre durée, codec, débit, fréquence, canaux et taille, puis l'avancement et le temps restant.
 
 ### FFmpeg (conversion vidéo et audio)
 
@@ -129,6 +131,7 @@ localconvert-cli split rapport.pdf parties/ --ranges "1-3, 4-7, 8-"   # un fichi
 localconvert-cli split rapport.pdf paquets/ --every 10
 localconvert-cli compress scan.pdf scan_leger.pdf --level forte
 localconvert-cli pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
+localconvert-cli pdf2doc sortie/ rapport.pdf contrat.pdf --format docx   # ou odt, txt
 localconvert-cli convert sortie/ *.png --format webp --quality 85 --max-width 1920
 localconvert-cli video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
 localconvert-cli video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
@@ -157,6 +160,7 @@ Toutes les dépendances sont sous licence permissive, compatibles avec un usage 
 | [PDFium](https://pdfium.googlesource.com/pdfium/) (binaires bblanchon) | Moteur de rendu PDF utilisé par PDFtoImage | BSD-3 / Apache 2.0 |
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par Avalonia et PDFtoImage | MIT |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Lecture et conversion des images | Apache 2.0 |
+| [PdfPig](https://github.com/UglyToad/PdfPig) | Lecture du texte des PDF (PDF → Word, ODT, texte) | Apache 2.0 |
 | [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo et audio | GPL (programme séparé) |
 
 > **Attention :** PDFsharp est volontairement figé en version **6.2.4**. Les versions 6.5 et suivantes sont passées

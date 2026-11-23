@@ -13,6 +13,8 @@
     <!-- PDFsharp 6.2.x est sous licence MIT. NE PAS passer à 6.5+ : licence AGPL-3.0 avec vérification de licence. -->
     <PackageReference Include="PDFsharp" Version="[6.2.4]" />
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
+    <!-- PdfPig (Apache 2.0) : extraction du texte des PDF (PDF → Word, ODT, texte). -->
+    <PackageReference Include="PdfPig" Version="0.1.16" />
   </ItemGroup>
 
   <ItemGroup>
