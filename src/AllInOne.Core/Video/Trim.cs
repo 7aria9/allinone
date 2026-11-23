@@ -1,4 +1,5 @@
 using System.Globalization;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -8,9 +9,9 @@ public static class Trim
     /// <summary>Vérifie que l'extrait a un sens (début positif, fin après le début).</summary>
     public static void Validate(TimeSpan? start, TimeSpan? end)
     {
-        if (start is { } s && s < TimeSpan.Zero) throw new ArgumentException("Le début de l'extrait doit être positif.");
+        if (start is { } s && s < TimeSpan.Zero) throw new ArgumentException(L.T("Le début de l'extrait doit être positif."));
         if (end is { } e && e <= (start ?? TimeSpan.Zero))
-            throw new ArgumentException("La fin de l'extrait doit être après son début.");
+            throw new ArgumentException(L.T("La fin de l'extrait doit être après son début."));
     }
 
     /// <summary>« -ss » placé avant « -i » : FFmpeg saute directement au début de l'extrait (rapide).</summary>

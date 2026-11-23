@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
@@ -37,6 +38,6 @@ public static class CrashLog
     {
         var root = exception;
         while (root.InnerException is not null) root = root.InnerException;
-        return root == exception ? exception.Message : $"{exception.Message}\n\nCause : {root.Message}";
+        return root == exception ? exception.Message : L.T("{0}\n\nCause : {1}", exception.Message, root.Message);
     }
 }

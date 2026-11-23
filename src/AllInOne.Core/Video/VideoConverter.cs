@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core.Video;
 
 /// <summary>Conversion de vidéos avec FFmpeg (processus externe).</summary>
@@ -12,9 +13,9 @@ public static class VideoConverter
     {
         options ??= new VideoConversionOptions();
         ffmpegPath ??= FfmpegLocator.Find() ?? throw new FfmpegNotFoundException();
-        if (!File.Exists(inputPath)) throw new FileNotFoundException($"Fichier introuvable : {inputPath}", inputPath);
+        if (!File.Exists(inputPath)) throw new FileNotFoundException(L.T("Fichier introuvable : {0}", inputPath), inputPath);
         if (string.Equals(Path.GetFullPath(inputPath), Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Le fichier de sortie doit être différent du fichier d'origine.");
+            throw new InvalidOperationException(L.T("Le fichier de sortie doit être différent du fichier d'origine."));
 
         var args = FfmpegArguments.Build(inputPath, outputPath, format, options);
         await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken, options.Start, options.End);
@@ -31,7 +32,7 @@ public static class VideoConverter
         for (var i = 0; i < inputs.Count; i++)
         {
             var index = i;
-            status?.Report($"Conversion {i + 1}/{inputs.Count} : {Path.GetFileName(inputs[i])}…");
+            status?.Report(L.T("Conversion {0}/{1} : {2}…", i + 1, inputs.Count, Path.GetFileName(inputs[i])));
             var target = FileNames.Unique(Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(inputs[i]) + format.Extension()));
             var fileProgress = new SyncProgress(v => progress?.Report((index + v) / inputs.Count));
             await ConvertAsync(inputs[i], target, format, options, fileProgress, cancellationToken, ffmpeg);
@@ -50,11 +51,11 @@ public static class VideoConverter
 public sealed class FfmpegNotFoundException : InvalidOperationException
 {
     public FfmpegNotFoundException()
-        : base("FFmpeg est introuvable. Installez-le (ou laissez AllInOne le télécharger) puis réessayez.") { }
+        : base(L.T("FFmpeg est introuvable. Installez-le (ou laissez AllInOne le télécharger) puis réessayez.")) { }
 }
 
 public sealed class VideoConversionException(string file, string summary, string fullLog)
-    : InvalidOperationException($"La conversion de {file} a échoué :{Environment.NewLine}{summary}")
+    : InvalidOperationException(L.T("La conversion de {0} a échoué :{1}{2}", file, Environment.NewLine, summary))
 {
     public string FullLog { get; } = fullLog;
 }

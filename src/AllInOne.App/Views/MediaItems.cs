@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using AllInOne.Core.Video;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App.Views;
 
@@ -15,7 +16,7 @@ public enum MediaState { Idle, Waiting, Running, Done, Failed, Cancelled }
 /// <summary>Un son ou une vidéo de la liste : ses caractéristiques et l'avancement de sa conversion.</summary>
 public sealed class MediaItem : Observable
 {
-    private string _info = "Lecture des informations…";
+    private string _info = L.T("Lecture des informations…");
     private MediaState _state;
     private double _progress;
     private string _statusText = "";
@@ -47,8 +48,9 @@ public sealed class MediaItem : Observable
         set
         {
             if (!Set(ref _state, value)) return;
-            Raise(nameof(ShowStatus));
-            Raise(nameof(ShowBar));
+            foreach (var name in new[] { nameof(ShowStatus), nameof(ShowBar), nameof(IsRunning), nameof(IsDone), nameof(IsFailed),
+                         nameof(StatusColumn), nameof(StatusColumnSpan), nameof(StatusMargin) })
+                Raise(name);
         }
     }
 
@@ -58,6 +60,14 @@ public sealed class MediaItem : Observable
 
     public bool ShowStatus => State != MediaState.Idle;
     public bool ShowBar => State is MediaState.Waiting or MediaState.Running;
+    public bool IsRunning => State == MediaState.Running;
+    public bool IsDone => State == MediaState.Done;
+    public bool IsFailed => State == MediaState.Failed;
+
+    // Sans barre (terminé, échec, arrêté), le texte d'état prend toute la largeur.
+    public int StatusColumn => ShowBar ? 1 : 0;
+    public int StatusColumnSpan => ShowBar ? 1 : 2;
+    public Avalonia.Thickness StatusMargin => ShowBar ? new(10, 0, 0, 0) : default;
 
     public void SetMedia(MediaInfo media)
     {
@@ -72,7 +82,7 @@ public sealed class MediaItem : Observable
         State = state;
         Progress = 0;
         Error = null;
-        StatusText = state == MediaState.Waiting ? "En attente" : "";
+        StatusText = state == MediaState.Waiting ? L.T("En attente") : "";
     }
 }
 
@@ -90,7 +100,7 @@ internal static class MediaItems
             if (ffmpeg is null)
             {
                 var size = TryGetSize(item.Path);
-                item.SetInfoText((size is { } s ? MediaInfo.FormatSize(s) + " · " : "") + "détails disponibles une fois FFmpeg installé");
+                item.SetInfoText((size is { } s ? MediaInfo.FormatSize(s) + " · " : "") + L.T("détails disponibles une fois FFmpeg installé"));
                 continue;
             }
             _ = LoadOneAsync(item, ffmpeg);
@@ -108,7 +118,7 @@ internal static class MediaItems
         catch (Exception ex)
         {
             CrashLog.Write(ex, "Lecture des informations de " + item.Path);
-            item.SetInfoText("Informations illisibles");
+            item.SetInfoText(L.T("Informations illisibles"));
         }
         finally
         {
@@ -117,24 +127,23 @@ internal static class MediaItems
     }
 
     /// <summary>Lit les champs Début / Fin d'un extrait. Affiche un message et renvoie false si la saisie est invalide.</summary>
-    public static bool TryReadTrim(System.Windows.Controls.TextBox start, System.Windows.Controls.TextBox end, System.Windows.Window? owner,
-        out TimeSpan? from, out TimeSpan? to)
+    public static async Task<(bool Ok, TimeSpan? From, TimeSpan? To)> ReadTrimAsync(
+        Avalonia.Controls.TextBox start, Avalonia.Controls.TextBox end, Avalonia.Controls.Window? owner)
     {
-        to = null;
-        if (!Trim.TryParseTime(start.Text, out from) || !Trim.TryParseTime(end.Text, out to))
+        if (!Trim.TryParseTime(start.Text, out var from) || !Trim.TryParseTime(end.Text, out var to))
         {
-            Dialog.Show(owner, "Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes).", "AllInOne");
-            return false;
+            await Dialog.Show(owner, L.T("Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes)."), "AllInOne");
+            return (false, null, null);
         }
         try
         {
             Trim.Validate(from, to);
-            return true;
+            return (true, from, to);
         }
         catch (ArgumentException ex)
         {
-            Dialog.Show(owner, ex.Message, "AllInOne");
-            return false;
+            await Dialog.Show(owner, ex.Message, "AllInOne");
+            return (false, null, null);
         }
     }
 
@@ -206,9 +215,9 @@ internal static class MediaItems
             var weight = weights[i];
             var position = $"{i + 1}/{items.Count}";
             item.State = MediaState.Running;
-            item.StatusText = "Démarrage…";
+            item.StatusText = L.T("Démarrage…");
             onStart(item);
-            status($"Conversion {position} : {item.Name}…");
+            status(L.T("Conversion {0} : {1}…", position, item.Name));
 
             var fileClock = Stopwatch.StartNew();
             var progress = new Progress<double>(v =>
@@ -221,7 +230,7 @@ internal static class MediaItems
                 var all = (doneWeight + v * weight) / total;
                 overall.Report(all);
                 var allLeft = RemainingTime.Estimate(all, batchClock.Elapsed);
-                status($"Conversion {position} : {item.Name}" + (allLeft is { } a ? $" · reste {RemainingTime.Format(a)} au total" : "…"));
+                status(L.T("Conversion {0} : {1}", position, item.Name) + (allLeft is { } a ? L.T(" · reste {0} au total", RemainingTime.Format(a)) : "…"));
             });
 
             var target = AllInOne.Core.FileNames.Unique(Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(item.Path) + extension));
@@ -230,13 +239,13 @@ internal static class MediaItems
                 var done = await convert(item.Path, target, progress, cancellationToken);
                 item.State = MediaState.Done;
                 item.Progress = 1;
-                item.StatusText = done ?? $"✓ Terminé en {MediaInfo.FormatDuration(fileClock.Elapsed)}";
+                item.StatusText = done ?? L.T("✓ Terminé en {0}", MediaInfo.FormatDuration(fileClock.Elapsed));
                 written.Add(target);
             }
             catch (OperationCanceledException)
             {
                 item.State = MediaState.Cancelled;
-                item.StatusText = "Arrêté";
+                item.StatusText = L.T("Arrêté");
                 foreach (var rest in items.Skip(i + 1)) rest.Reset(MediaState.Idle);
                 throw;
             }
@@ -246,7 +255,7 @@ internal static class MediaItems
                 var message = ex is VideoConversionException ? ex.Message : $"{item.Name} : {ex.Message}";
                 item.State = MediaState.Failed;
                 var reason = message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
-                item.StatusText = "✗ Échec" + (reason is null ? "" : " : " + reason);
+                item.StatusText = L.T("✗ Échec") + (reason is null ? "" : " : " + reason);
                 item.Error = message;
                 failures.Add((item, message));
             }

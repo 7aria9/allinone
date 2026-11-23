@@ -1,55 +1,55 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
+public enum MessageBoxButton { OK, OKCancel, YesNo, YesNoCancel }
+public enum MessageBoxImage { None, Information, Warning, Error, Question }
+public enum MessageBoxResult { None, OK, Cancel, Yes, No }
+
 /// <summary>
-/// Remplace MessageBox.Show : même usage, mais une fenêtre aux couleurs du programme
-/// (fond sombre, bandeau dégradé rose-violet, boutons arrondis).
+/// Boîte de message aux couleurs du programme (fond sombre, bandeau dégradé rose-violet, boutons arrondis),
+/// identique sous Windows, macOS et Linux.
 /// </summary>
 public static class Dialog
 {
-    public static MessageBoxResult Show(string text, string title = "AllInOne",
-        MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxImage image = MessageBoxImage.None,
-        MessageBoxResult defaultResult = MessageBoxResult.None) =>
-        Show(null, text, title, buttons, image, defaultResult);
-
-    public static MessageBoxResult Show(Window? owner, string text, string title = "AllInOne",
+    public static async Task<MessageBoxResult> Show(Window? owner, string text, string title = "AllInOne",
         MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxImage image = MessageBoxImage.None,
         MessageBoxResult defaultResult = MessageBoxResult.None)
     {
-        var res = Application.Current.Resources;
-        Brush B(string key) => (Brush)res[key];
+        var res = Application.Current!.Resources;
+        IBrush B(string key) => res.TryGetResource(key, null, out var v) && v is IBrush b ? b
+            : Application.Current.Styles.TryGetResource(key, null, out var s) && s is IBrush sb ? sb : Brushes.Gray;
 
         var result = buttons is MessageBoxButton.OK ? MessageBoxResult.OK
             : buttons is MessageBoxButton.YesNo ? MessageBoxResult.No : MessageBoxResult.Cancel;
 
+        owner ??= (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow is { IsVisible: true } mw ? mw : null;
+
         var w = new Window
         {
             Title = title,
-            WindowStyle = WindowStyle.None,
-            AllowsTransparency = true,
-            Background = Brushes.Transparent,
-            ResizeMode = ResizeMode.NoResize,
+            SystemDecorations = SystemDecorations.None,
+            CanResize = false,
             SizeToContent = SizeToContent.WidthAndHeight,
             ShowInTaskbar = owner is null,
             Topmost = owner is null,
-            FontFamily = new FontFamily("Segoe UI"),
-            Foreground = B("Text"),
+            Background = B("Surface"),
+            WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
         };
-        owner ??= Application.Current.MainWindow is { IsLoaded: true } mw ? mw : null;
-        if (owner is not null) { w.Owner = owner; w.WindowStartupLocation = WindowStartupLocation.CenterOwner; }
-        else w.WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
         var (glyph, color) = image switch
         {
             MessageBoxImage.Error => ("✕", B("Accent")),
-            MessageBoxImage.Warning => ("!", (Brush)new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24))),
+            MessageBoxImage.Warning => ("!", B("Warning")),
             MessageBoxImage.Question => ("?", B("Accent2")),
             MessageBoxImage.Information => ("i", B("Accent2")),
-            _ => ((string?)null, (Brush?)null),
+            _ => ((string?)null, (IBrush?)null),
         };
 
         var header = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
@@ -61,7 +61,7 @@ public static class Dialog
                 Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center,
                 Child = new TextBlock
                 {
-                    Text = glyph, FontWeight = FontWeights.Black, FontSize = 16, Foreground = Brushes.White,
+                    Text = glyph, FontWeight = FontWeight.Black, FontSize = 16, Foreground = Brushes.White,
                     HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 },
             };
@@ -70,29 +70,31 @@ public static class Dialog
         }
         header.Children.Add(new TextBlock
         {
-            Text = title, FontSize = 17, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center,
+            Text = title, FontSize = 17, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center,
         });
 
         var body = new ScrollViewer
         {
-            MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 14, Foreground = B("Text"), LineHeight = 20 },
+            MaxHeight = 420,
+            Content = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 14, LineHeight = 20 },
         };
 
         var bar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
+        var effectiveDefault = defaultResult != MessageBoxResult.None ? defaultResult
+            : buttons is MessageBoxButton.YesNo or MessageBoxButton.YesNoCancel ? MessageBoxResult.Yes : MessageBoxResult.OK;
         void Add(string label, MessageBoxResult r, bool cancel = false)
         {
-            var b = new Button { Content = label, MinWidth = 96, IsCancel = cancel };
+            var b = new Button { Content = label, MinWidth = 96, IsCancel = cancel, HorizontalContentAlignment = HorizontalAlignment.Center };
+            if (r == effectiveDefault) { b.IsDefault = true; b.Classes.Add("primary"); }
             b.Click += (_, _) => { result = r; w.Close(); };
-            if (r == (defaultResult != MessageBoxResult.None ? defaultResult : FirstOf(buttons))) b.IsDefault = true;
             bar.Children.Add(b);
         }
         switch (buttons)
         {
             case MessageBoxButton.OK: Add("OK", MessageBoxResult.OK, cancel: true); break;
-            case MessageBoxButton.OKCancel: Add("OK", MessageBoxResult.OK); Add("Annuler", MessageBoxResult.Cancel, true); break;
-            case MessageBoxButton.YesNo: Add("Oui", MessageBoxResult.Yes); Add("Non", MessageBoxResult.No, true); break;
-            default: Add("Oui", MessageBoxResult.Yes); Add("Non", MessageBoxResult.No); Add("Annuler", MessageBoxResult.Cancel, true); break;
+            case MessageBoxButton.OKCancel: Add("OK", MessageBoxResult.OK); Add(L.T("Annuler"), MessageBoxResult.Cancel, true); break;
+            case MessageBoxButton.YesNo: Add(L.T("Oui"), MessageBoxResult.Yes); Add(L.T("Non"), MessageBoxResult.No, true); break;
+            default: Add(L.T("Oui"), MessageBoxResult.Yes); Add(L.T("Non"), MessageBoxResult.No); Add(L.T("Annuler"), MessageBoxResult.Cancel, true); break;
         }
 
         var content = new StackPanel { Margin = new Thickness(24, 20, 24, 18), MinWidth = 340, MaxWidth = 560 };
@@ -100,26 +102,29 @@ public static class Dialog
         content.Children.Add(body);
         content.Children.Add(bar);
 
-        var frame = new Grid();
-        frame.RowDefinitions.Add(new RowDefinition { Height = new GridLength(4) });
-        frame.RowDefinitions.Add(new RowDefinition());
-        var stripe = new Border { Background = B("AccentGradient"), CornerRadius = new CornerRadius(12, 12, 0, 0) };
-        Grid.SetRow(content, 1);
+        var frame = new DockPanel();
+        var stripe = new Border { Height = 4, Background = B("AccentGradient") };
+        DockPanel.SetDock(stripe, Dock.Top);
         frame.Children.Add(stripe);
         frame.Children.Add(content);
 
-        w.Content = new Border
+        w.Content = new Border { BorderBrush = B("Line"), BorderThickness = new Thickness(1), Child = frame };
+        w.PointerPressed += (_, e) =>
         {
-            Margin = new Thickness(12), CornerRadius = new CornerRadius(12),
-            Background = B("Surface"), BorderBrush = B("Line"), BorderThickness = new Thickness(1),
-            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 2, Opacity = 0.55, Color = Colors.Black },
-            Child = frame,
+            if (e.GetCurrentPoint(w).Properties.IsLeftButtonPressed) w.BeginMoveDrag(e);
         };
-        w.MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) w.DragMove(); };
-        w.ShowDialog();
+
+        if (owner is not null)
+        {
+            await w.ShowDialog(owner);
+        }
+        else
+        {
+            var closed = new TaskCompletionSource();
+            w.Closed += (_, _) => closed.TrySetResult();
+            w.Show();
+            await closed.Task;
+        }
         return result;
     }
-
-    private static MessageBoxResult FirstOf(MessageBoxButton b) =>
-        b is MessageBoxButton.YesNo or MessageBoxButton.YesNoCancel ? MessageBoxResult.Yes : MessageBoxResult.OK;
 }

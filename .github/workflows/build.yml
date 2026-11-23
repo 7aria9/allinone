@@ -13,10 +13,20 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Installation de FFmpeg (tests vidéo)
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Installation de FFmpeg (tests vidéo) et Xvfb (écran virtuel)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb
       - name: Tests de la bibliothèque
         run: dotnet test tests/AllInOne.Core.Tests -c Release
+      - name: Publication Linux x64
+        run: |
+          dotnet publish src/AllInOne.Cli -c Release -r linux-x64 --self-contained true -p:DebugType=none -o publish/linux-x64
+          dotnet publish src/AllInOne.App -c Release -r linux-x64 --self-contained true -p:DebugType=none -o publish/linux-x64
+      - name: Test de démarrage (Linux, sous Xvfb) et captures d'écran
+        run: ./.github/scripts/smoke-test.sh publish/linux-x64 screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: captures-linux
+          path: screenshots/
 
   windows-app:
     runs-on: windows-latest
@@ -31,8 +41,6 @@ jobs:
         shell: pwsh
         run: |
           foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
-            # D'abord la ligne de commande, puis l'application : en version autonome les deux partagent les DLL du runtime,
-            # et l'application doit garder ses versions WPF de WindowsBase.dll / System.Drawing.dll.
             dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
@@ -45,3 +53,34 @@ jobs:
         with:
           name: AllInOne-win-x64
           path: publish/leger/
+
+  macos-app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Tests (macOS)
+        run: dotnet test tests/AllInOne.Core.Tests -c Release
+      - name: Publication et paquets .app (Apple Silicon et Intel)
+        run: |
+          for rid in osx-arm64 osx-x64; do
+            dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
+            dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
+            mkdir -p dist/$rid
+            ./.github/scripts/package-macos.sh publish/$rid 0.0.0 dist/$rid/AllInOne-$rid.zip
+          done
+      - name: Test de démarrage (Apple Silicon)
+        run: ./.github/scripts/smoke-test.sh dist/osx-arm64/AllInOne.app/Contents/MacOS screenshots
+      - name: Test de démarrage (Intel, via Rosetta si disponible)
+        run: |
+          if arch -x86_64 /usr/bin/true 2>/dev/null; then
+            ./.github/scripts/smoke-test.sh dist/osx-x64/AllInOne.app/Contents/MacOS
+          else
+            echo "Rosetta absent sur ce runner : version Intel compilée mais pas lancée."
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: captures-macos
+          path: screenshots/

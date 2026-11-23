@@ -2,6 +2,7 @@ using AllInOne.Core.Images;
 using ImageMagick;
 using PDFtoImage;
 using SkiaSharp;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Pdf;
 
@@ -41,7 +42,7 @@ public static class PdfRenderer
             cancellationToken.ThrowIfCancellationRequested();
             var index = pages[i];
             if (index < 0 || index >= count)
-                throw new ArgumentOutOfRangeException(null, $"La page {index + 1} n'existe pas (le document a {count} page(s)).");
+                throw new ArgumentOutOfRangeException(null, L.T("La page {0} n'existe pas (le document a {1} page(s)).", index + 1, count));
 
             var target = FileNames.Unique(Path.Combine(outputDirectory,
                 $"{name}_page{(index + 1).ToString().PadLeft(digits, '0')}{format.Extension()}"));

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -12,6 +13,14 @@ public static class FfmpegDownloader
         "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
 
     public static bool IsSupportedPlatform => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem;
+
+    /// <summary>Comment installer FFmpeg là où AllInOne ne le télécharge pas lui-même (macOS, Linux).</summary>
+    public static string InstallHint =>
+        OperatingSystem.IsMacOS()
+            ? L.T("Installe-le avec Homebrew (https://brew.sh) : ouvre le Terminal et tape « brew install ffmpeg », puis reviens ici.")
+            : OperatingSystem.IsLinux()
+                ? L.T("Installe-le avec le gestionnaire de paquets, par exemple « sudo apt install ffmpeg » (Debian, Ubuntu, Mint), « sudo dnf install ffmpeg » (Fedora) ou « sudo pacman -S ffmpeg » (Arch), puis reviens ici.")
+                : L.T("Installe-le puis ajoute-le au PATH.");
 
     /// <summary>Télécharge et installe FFmpeg. Renvoie le chemin de ffmpeg.exe.</summary>
     public static async Task<string> DownloadAsync(IProgress<double>? progress = null, CancellationToken cancellationToken = default,
@@ -60,7 +69,7 @@ public static class FfmpegDownloader
             }
 
             progress?.Report(1);
-            return installed ?? throw new InvalidOperationException("L'archive téléchargée ne contient pas ffmpeg.");
+            return installed ?? throw new InvalidOperationException(L.T("L'archive téléchargée ne contient pas ffmpeg."));
         }
         finally
         {

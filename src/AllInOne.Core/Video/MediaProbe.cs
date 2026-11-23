@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -14,7 +15,7 @@ public static partial class MediaProbe
 {
     public static async Task<MediaInfo> ProbeAsync(string path, string? ffmpegPath = null, CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(path)) throw new FileNotFoundException($"Fichier introuvable : {path}", path);
+        if (!File.Exists(path)) throw new FileNotFoundException(L.T("Fichier introuvable : {0}", path), path);
         var size = new FileInfo(path).Length;
         ffmpegPath ??= FfmpegLocator.Find() ?? throw new FfmpegNotFoundException();
 

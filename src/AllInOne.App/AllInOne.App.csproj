@@ -2,23 +2,33 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>AllInOne</AssemblyName>
     <RootNamespace>AllInOne.App</RootNamespace>
-    <!-- Permet de compiler (sans exécuter) l'application WPF depuis Linux/macOS, par exemple en CI. -->
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <NoWarn>$(NoWarn);CA1416</NoWarn>
-    <!--
-      Compilation pour Windows 64 bits, dépendante du runtime .NET installé : le dossier de sortie contient
-      AllInOne.exe et ses DLL côte à côte, uniquement les bibliothèques natives x64 (pas celles des autres plateformes).
-    -->
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>false</SelfContained>
+    <!-- Liaisons par réflexion dans les modèles XAML (plus simple que les liaisons compilées pour ces petites listes). -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Avalonia annote plus de propriétés comme « nullables » que WPF (Text, Tag…) : avertissements sans conséquence ici. -->
+    <NoWarn>$(NoWarn);CA1416;CS8600;CS8602;CS8604</NoWarn>
+    <!-- Les DLL restent à côté de l'exécutable (pas d'exe unique de 200 Mo). -->
     <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Avalonia (licence MIT) : interface identique sous Windows, macOS et Linux.
+      SkiaSharp est partagé avec PDFtoImage : les deux doivent rester sur la même version majeure (3.x).
+    -->
+    <PackageReference Include="Avalonia" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.23" />
+    <PackageReference Include="SkiaSharp" Version="3.119.2" />
+    <!-- Avalonia tire encore les bibliothèques natives Linux 2.88 : on impose celles de SkiaSharp 3. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.2" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AllInOne.Core\AllInOne.Core.csproj" />

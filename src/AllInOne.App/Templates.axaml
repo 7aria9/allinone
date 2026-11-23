@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Ligne d'une liste de fichiers : miniature arrondie, nom et dossier. -->
+    <DataTemplate x:Key="FileItemTemplate">
+        <Grid ColumnDefinitions="56,*" ToolTip.Tip="{Binding Path}">
+            <Border Width="52" Height="52" CornerRadius="8" Background="{StaticResource CoverPlaceholder}" ClipToBounds="True">
+                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Folder}" Foreground="{StaticResource TextDim}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Ligne d'un son, d'une vidéo ou d'un PDF : caractéristiques, puis avancement et temps restant pendant le traitement. -->
+    <DataTemplate x:Key="MediaItemTemplate">
+        <Grid ColumnDefinitions="56,*" ToolTip.Tip="{Binding Path}">
+            <Border Width="52" Height="52" CornerRadius="8" Background="{StaticResource CoverPlaceholder}" VerticalAlignment="Top">
+                <TextBlock Text="{Binding Icon}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Info}" Foreground="{StaticResource TextDim}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0" IsVisible="{Binding ShowStatus}">
+                    <ProgressBar Classes="thin" Value="{Binding Progress}" VerticalAlignment="Center" IsVisible="{Binding ShowBar}" />
+                    <TextBlock Classes="status"
+                               Classes.running="{Binding IsRunning}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}"
+                               Grid.Column="{Binding StatusColumn}" Grid.ColumnSpan="{Binding StatusColumnSpan}"
+                               Margin="{Binding StatusMargin}" Text="{Binding StatusText}" ToolTip.Tip="{Binding Error}" />
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

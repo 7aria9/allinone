@@ -1,7 +1,7 @@
 <UserControl x:Class="AllInOne.App.Views.PdfToImagesView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid AllowDrop="True" Drop="Root_Drop" DragOver="Root_DragOver" Background="Transparent">
+    <Grid x:Name="Root" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -12,21 +12,21 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.ColumnSpan="2" Text="PDF → images" Style="{StaticResource PageTitle}" />
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Hint}"
+        <TextBlock Grid.ColumnSpan="2" Text="PDF → images" Classes="pageTitle" />
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="hint"
                    Text="Chaque page du PDF devient une image. Tu peux glisser un PDF n'importe où sur cet écran." />
 
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,16,0">
+        <Border Grid.Row="2" Classes="card" Margin="0,0,16,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="FICHIER" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="FICHIER" Classes="section" />
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowsePdf_Click" Margin="8,0,0,0" />
                         <TextBox x:Name="PdfPath" IsReadOnly="True" />
                     </DockPanel>
                     <TextBlock x:Name="PageCount" Foreground="{StaticResource TextDim}" FontSize="12" Margin="2,0,0,16" />
 
-                    <TextBlock Text="OPTIONS" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="OPTIONS" Classes="section" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -40,7 +40,7 @@
                         </Grid.RowDefinitions>
                         <Label Content="Pages" />
                         <TextBox Grid.Column="1" x:Name="PageText" Margin="0,0,0,8"
-                                 ToolTip="Exemples : 1-3,5 ou 4- (vide = toutes les pages)" />
+                                 ToolTip.Tip="Exemples : 1-3,5 ou 4- (vide = toutes les pages)" />
                         <Label Grid.Row="1" Content="Format" />
                         <ComboBox Grid.Row="1" Grid.Column="1" x:Name="Format" SelectionChanged="Format_SelectionChanged" Margin="0,0,0,8" />
                         <Label Grid.Row="2" Content="Résolution" />
@@ -54,28 +54,28 @@
                         </ComboBox>
                         <Label Grid.Row="3" x:Name="QualityLabel" Content="Qualité" />
                         <DockPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,8">
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value, ElementName=Quality}" Width="30"
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding #Quality.Value, StringFormat=0}" Width="30"
                                        TextAlignment="Right" VerticalAlignment="Center" />
                             <Slider x:Name="Quality" Minimum="10" Maximum="100" Value="90" VerticalAlignment="Center"
                                     IsSnapToTickEnabled="True" TickFrequency="5" />
                         </DockPanel>
                     </Grid>
 
-                    <TextBlock Text="DESTINATION" Style="{StaticResource SectionTitle}" Margin="0,12,0,10" />
+                    <TextBlock Text="DESTINATION" Classes="section" Margin="0,12,0,10" />
                     <DockPanel Margin="0,0,0,18">
                         <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowseOutput_Click" Margin="8,0,0,0" />
                         <TextBox x:Name="OutputDir" />
                     </DockPanel>
 
-                    <Button Content="🧩  Convertir en images" Style="{StaticResource PrimaryButton}" Click="Convert_Click"
+                    <Button Content="🧩  Convertir en images" Classes="primary" Click="Convert_Click"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="14,10" FontSize="14" />
                 </StackPanel>
             </ScrollViewer>
         </Border>
 
-        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource Card}">
+        <Border Grid.Row="2" Grid.Column="1" Classes="card">
             <Grid>
-                <TextBlock Style="{StaticResource DropHint}" Text="Dépose un PDF ici&#x0a;pour voir sa première page" />
+                <TextBlock Classes="dropHint" Text="Dépose un PDF ici&#x0a;pour voir sa première page" />
                 <Image x:Name="Preview" Stretch="Uniform" />
             </Grid>
         </Border>

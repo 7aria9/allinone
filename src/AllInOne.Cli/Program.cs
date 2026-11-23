@@ -3,6 +3,7 @@ using AllInOne.Core;
 using AllInOne.Core.Images;
 using AllInOne.Core.Pdf;
 using AllInOne.Core.Video;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Cli;
 
@@ -34,13 +35,27 @@ public static class Program
           audio      <dossier> <son|vidéo...> --format mp3|wav|aiff|flac|ogg|opus|m4a [--quality haute|moyenne|faible]
                      [--rate 44100] [--channels 1|2] [--start 0:30] [--end 1:00]   (nécessite FFmpeg dans le PATH)
           info       <entrée.pdf>
+
+        Option commune : --lang fr|en|de|es (langue des messages).
         """;
 
     public static int Main(string[] args)
     {
+        // Langue : « --lang en|de|es|fr », sinon la variable ALLINONE_LANG, celle choisie dans l'application, ou celle du système.
+        var lang = Array.FindIndex(args, a => a.Equals("--lang", StringComparison.OrdinalIgnoreCase));
+        if (lang >= 0 && lang + 1 < args.Length)
+        {
+            L.Initialize(args[lang + 1]);
+            args = args.Take(lang).Concat(args.Skip(lang + 2)).ToArray();
+        }
+        else
+        {
+            L.Initialize(Environment.GetEnvironmentVariable("ALLINONE_LANG"));
+        }
+
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
         {
-            Console.WriteLine(Help);
+            Console.WriteLine(L.T(Help));
             return args.Length == 0 ? 1 : 0;
         }
 
@@ -53,7 +68,7 @@ public static class Program
         catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException or IOException
                                        or UnauthorizedAccessException or NotSupportedException)
         {
-            Console.Error.WriteLine("Erreur : " + ex.Message);
+            Console.Error.WriteLine(L.T("Erreur : ") + ex.Message);
             return 2;
         }
     }
@@ -64,21 +79,21 @@ public static class Program
         {
             case "images2pdf":
             {
-                a.Require(2, "images2pdf <sortie.pdf> <image...>");
+                a.Require(2, L.T("images2pdf <sortie.pdf> <image...>"));
                 PdfTools.ImagesToPdf(a.Positional.Skip(1), a.Positional[0], ImageOptions(a));
                 Done(a.Positional[0]);
                 break;
             }
             case "merge":
             {
-                a.Require(2, "merge <sortie.pdf> <fichier...>");
+                a.Require(2, L.T("merge <sortie.pdf> <fichier...>"));
                 PdfTools.Merge(a.Positional.Skip(1), a.Positional[0], ImageOptions(a));
                 Done(a.Positional[0]);
                 break;
             }
             case "delete":
             {
-                a.Require(2, "delete <entrée.pdf> <pages>");
+                a.Require(2, L.T("delete <entrée.pdf> <pages>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.DeletePages(input, output, PageRange.Parse(a.Positional[1], PdfInfo.GetPageCount(input)));
@@ -87,7 +102,7 @@ public static class Program
             }
             case "extract":
             {
-                a.Require(2, "extract <entrée.pdf> <pages>");
+                a.Require(2, L.T("extract <entrée.pdf> <pages>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.ExtractPages(input, output, PageRange.Parse(a.Positional[1], PdfInfo.GetPageCount(input)));
@@ -96,7 +111,7 @@ public static class Program
             }
             case "reorder":
             {
-                a.Require(2, "reorder <entrée.pdf> <ordre>");
+                a.Require(2, L.T("reorder <entrée.pdf> <ordre>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.ReorderPages(input, output, PageRange.Parse(a.Positional[1], PdfInfo.GetPageCount(input)));
@@ -105,7 +120,7 @@ public static class Program
             }
             case "move":
             {
-                a.Require(3, "move <entrée.pdf> <de> <vers>");
+                a.Require(3, L.T("move <entrée.pdf> <de> <vers>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.MovePage(input, output, Int(a.Positional[1]) - 1, Int(a.Positional[2]) - 1);
@@ -114,7 +129,7 @@ public static class Program
             }
             case "insert":
             {
-                a.Require(3, "insert <entrée.pdf> <position> <fichier...>");
+                a.Require(3, L.T("insert <entrée.pdf> <position> <fichier...>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.InsertPages(input, output, Int(a.Positional[1]) - 1, a.Positional.Skip(2), ImageOptions(a));
@@ -123,7 +138,7 @@ public static class Program
             }
             case "rotate":
             {
-                a.Require(3, "rotate <entrée.pdf> <pages> <degrés>");
+                a.Require(3, L.T("rotate <entrée.pdf> <pages> <degrés>"));
                 var input = a.Positional[0];
                 var output = Output(a, input);
                 PdfTools.RotatePages(input, output, PageRange.Parse(a.Positional[1], PdfInfo.GetPageCount(input)), Int(a.Positional[2]));
@@ -132,43 +147,43 @@ public static class Program
             }
             case "split":
             {
-                a.Require(2, "split <entrée.pdf> <dossier>");
+                a.Require(2, L.T("split <entrée.pdf> <dossier>"));
                 var files = a.Get("ranges") is { } ranges ? PdfTools.SplitByRanges(a.Positional[0], a.Positional[1], ranges)
                     : a.Get("every") is { } every ? PdfTools.SplitEvery(a.Positional[0], a.Positional[1], Int(every))
                     : PdfTools.SplitPages(a.Positional[0], a.Positional[1]);
-                Console.WriteLine($"{files.Count} fichier(s) créé(s) dans {a.Positional[1]}");
+                Console.WriteLine(L.T("{0} fichier(s) créé(s) dans {1}", files.Count, a.Positional[1]));
                 break;
             }
             case "compress":
             {
-                a.Require(2, "compress <entrée.pdf> <sortie.pdf>");
+                a.Require(2, L.T("compress <entrée.pdf> <sortie.pdf>"));
                 var level = (a.Get("level") ?? "moyenne").Trim().ToLowerInvariant() switch
                 {
                     "legere" or "légère" or "light" => PdfCompressionLevel.Light,
                     "forte" or "strong" => PdfCompressionLevel.Strong,
                     "moyenne" or "medium" => PdfCompressionLevel.Medium,
-                    var other => throw new ArgumentException($"Niveau inconnu : {other} (legere, moyenne ou forte)"),
+                    var other => throw new ArgumentException(L.T("Niveau inconnu : {0} (legere, moyenne ou forte)", other)),
                 };
                 var r = PdfCompressor.Compress(a.Positional[0], a.Positional[1], level);
                 Console.WriteLine(r.KeptOriginal
-                    ? $"Déjà optimisé : copie identique écrite dans {a.Positional[1]}"
-                    : $"{MediaInfo.FormatSize(r.OriginalBytes)} → {MediaInfo.FormatSize(r.CompressedBytes)} (−{r.Saving:0 %}), {r.ImagesRecompressed} image(s) recompressée(s) : {a.Positional[1]}");
+                    ? L.T("Déjà optimisé : copie identique écrite dans {0}", a.Positional[1])
+                    : L.T("{0} → {1} (−{2:0 %}), {3} image(s) recompressée(s) : {4}", MediaInfo.FormatSize(r.OriginalBytes), MediaInfo.FormatSize(r.CompressedBytes), r.Saving, r.ImagesRecompressed, a.Positional[1]));
                 break;
             }
             case "pdf2img":
             {
-                a.Require(2, "pdf2img <entrée.pdf> <dossier>");
+                a.Require(2, L.T("pdf2img <entrée.pdf> <dossier>"));
                 var input = a.Positional[0];
                 var format = ImageFormats.Parse(a.Get("format") ?? "png");
                 var pages = a.Get("pages") is { } range ? PageRange.Parse(range, PdfInfo.GetPageCount(input)) : null;
                 var files = PdfRenderer.ToImages(input, a.Positional[1], format, Int(a.Get("dpi") ?? "150"), pages,
                     new ImageConversionOptions { Quality = Int(a.Get("quality") ?? "90") });
-                Console.WriteLine($"{files.Count} image(s) créée(s) dans {a.Positional[1]}");
+                Console.WriteLine(L.T("{0} image(s) créée(s) dans {1}", files.Count, a.Positional[1]));
                 break;
             }
             case "convert":
             {
-                a.Require(2, "convert <dossier> <image...> --format <format>");
+                a.Require(2, L.T("convert <dossier> <image...> --format <format>"));
                 var format = ImageFormats.Parse(a.Get("format") ?? throw new ArgumentException("--format est obligatoire."));
                 var options = new ImageConversionOptions
                 {
@@ -177,12 +192,12 @@ public static class Program
                     MaxHeight = a.Get("max-height") is { } h ? Int(h) : null,
                 };
                 var files = ImageConverter.ConvertMany(a.Positional.Skip(1), a.Positional[0], format, options);
-                Console.WriteLine($"{files.Count} image(s) convertie(s) dans {a.Positional[0]}");
+                Console.WriteLine(L.T("{0} image(s) convertie(s) dans {1}", files.Count, a.Positional[0]));
                 break;
             }
             case "video":
             {
-                a.Require(2, "video <dossier> <vidéo...> --format <format>");
+                a.Require(2, L.T("video <dossier> <vidéo...> --format <format>"));
                 var format = VideoFormats.Parse(a.Get("format") ?? throw new ArgumentException("--format est obligatoire."));
                 var options = new VideoConversionOptions
                 {
@@ -201,12 +216,12 @@ public static class Program
                 });
                 var files = VideoConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options, progress,
                     status: new Progress<string>(m => Console.Write("\r" + m + Environment.NewLine))).GetAwaiter().GetResult();
-                Console.WriteLine($"\r{files.Count} vidéo(s) convertie(s) dans {a.Positional[0]}");
+                Console.WriteLine(L.T("\r{0} vidéo(s) convertie(s) dans {1}", files.Count, a.Positional[0]));
                 break;
             }
             case "frames":
             {
-                a.Require(2, "frames <dossier> <vidéo...>");
+                a.Require(2, L.T("frames <dossier> <vidéo...>"));
                 var options = new FrameExtractionOptions
                 {
                     Format = ImageFormats.Parse(a.Get("format") ?? "png"),
@@ -220,13 +235,13 @@ public static class Program
                 {
                     var folder = FileNames.UniqueDirectory(Path.Combine(a.Positional[0], Path.GetFileNameWithoutExtension(video) + "_images"));
                     var files = VideoFrames.ExtractAsync(video, folder, options).GetAwaiter().GetResult();
-                    Console.WriteLine($"{files.Count} image(s) extraite(s) dans {folder}");
+                    Console.WriteLine(L.T("{0} image(s) extraite(s) dans {1}", files.Count, folder));
                 }
                 break;
             }
             case "audio":
             {
-                a.Require(2, "audio <dossier> <fichier...> --format <format>");
+                a.Require(2, L.T("audio <dossier> <fichier...> --format <format>"));
                 var format = AudioFormats.Parse(a.Get("format") ?? throw new ArgumentException("--format est obligatoire."));
                 var options = new AudioConversionOptions
                 {
@@ -238,17 +253,17 @@ public static class Program
                 };
                 var files = AudioConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options,
                     status: new Progress<string>(Console.WriteLine)).GetAwaiter().GetResult();
-                Console.WriteLine($"{files.Count} fichier(s) converti(s) dans {a.Positional[0]}");
+                Console.WriteLine(L.T("{0} fichier(s) converti(s) dans {1}", files.Count, a.Positional[0]));
                 break;
             }
             case "info":
             {
-                a.Require(1, "info <entrée.pdf>");
-                Console.WriteLine($"{a.Positional[0]} : {PdfInfo.GetPageCount(a.Positional[0])} page(s)");
+                a.Require(1, L.T("info <entrée.pdf>"));
+                Console.WriteLine(L.T("{0} : {1} page(s)", a.Positional[0], PdfInfo.GetPageCount(a.Positional[0])));
                 break;
             }
             default:
-                throw new ArgumentException($"Commande inconnue : {command}. Tapez « allinone-cli --help ».");
+                throw new ArgumentException(L.T("Commande inconnue : {0}. Tapez « allinone-cli --help ».", command));
         }
     }
 
@@ -262,14 +277,14 @@ public static class Program
             "letter" => PageSizeMode.Letter,
             "legal" => PageSizeMode.Legal,
             "fit" or "image" => PageSizeMode.FitImage,
-            var s => throw new ArgumentException($"Taille de page inconnue : {s}"),
+            var s => throw new ArgumentException(L.T("Taille de page inconnue : {0}", s)),
         },
         Orientation = (a.Get("orientation") ?? "auto").ToLowerInvariant() switch
         {
             "auto" => PageOrientation.Auto,
             "portrait" => PageOrientation.Portrait,
             "landscape" or "paysage" => PageOrientation.Landscape,
-            var s => throw new ArgumentException($"Orientation inconnue : {s}"),
+            var s => throw new ArgumentException(L.T("Orientation inconnue : {0}", s)),
         },
         MarginMm = a.Get("margin") is { } m ? double.Parse(m.Replace(',', '.'), CultureInfo.InvariantCulture) : 10,
         EnlargeSmallImages = !a.Flag("no-enlarge"),
@@ -280,12 +295,12 @@ public static class Program
         Path.Combine(Path.GetDirectoryName(Path.GetFullPath(input))!, Path.GetFileNameWithoutExtension(input) + "_modifie.pdf");
 
     private static TimeSpan? Time(string? text) =>
-        Trim.TryParseTime(text, out var t) ? t : throw new FormatException($"Temps invalide : « {text} » (exemples : 90, 1:30, 0:01:30)");
+        Trim.TryParseTime(text, out var t) ? t : throw new FormatException(L.T("Temps invalide : « {0} » (exemples : 90, 1:30, 0:01:30)", text));
 
     private static int Int(string s) =>
-        int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : throw new FormatException($"Nombre invalide : « {s} »");
+        int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : throw new FormatException(L.T("Nombre invalide : « {0} »", s));
 
-    private static void Done(string path) => Console.WriteLine($"Fichier créé : {path}");
+    private static void Done(string path) => Console.WriteLine(L.T("Fichier créé : {0}", path));
 }
 
 /// <summary>Arguments : valeurs positionnelles, options « --nom valeur » / « -o valeur » et drapeaux « --nom ».</summary>
@@ -306,7 +321,7 @@ internal sealed class Args
             {
                 var name = arg.TrimStart('-');
                 if (Flags.Contains(name)) { result._options[name] = null; continue; }
-                if (!e.MoveNext()) throw new ArgumentException($"Valeur manquante pour {arg}.");
+                if (!e.MoveNext()) throw new ArgumentException(L.T("Valeur manquante pour {0}.", arg));
                 result._options[name] = e.Current;
             }
             else
@@ -322,6 +337,6 @@ internal sealed class Args
 
     public void Require(int count, string usage)
     {
-        if (Positional.Count < count) throw new ArgumentException("Usage : allinone-cli " + usage);
+        if (Positional.Count < count) throw new ArgumentException(L.T("Usage : allinone-cli ") + usage);
     }
 }

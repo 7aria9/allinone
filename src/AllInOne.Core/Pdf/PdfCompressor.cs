@@ -2,6 +2,7 @@ using ImageMagick;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.Advanced;
 using PdfSharp.Pdf.IO;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Pdf;
 
@@ -44,7 +45,7 @@ public static class PdfCompressor
         IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         if (string.Equals(Path.GetFullPath(inputPath), Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Le fichier compressé doit être différent du fichier d'origine.");
+            throw new InvalidOperationException(L.T("Le fichier compressé doit être différent du fichier d'origine."));
         var original = new FileInfo(inputPath).Length;
         var (maxPixels, quality) = Settings(level);
 

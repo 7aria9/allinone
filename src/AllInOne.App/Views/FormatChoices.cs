@@ -1,4 +1,4 @@
-using System.Windows.Controls;
+using Avalonia.Controls;
 using AllInOne.Core;
 
 namespace AllInOne.App.Views;
@@ -21,7 +21,7 @@ internal static class FormatChoices
         {
             combo.Items.Add(new ComboBoxItem { Content = label, Tag = format });
         }
-        combo.SelectedIndex = combo.Items.Cast<ComboBoxItem>().ToList().FindIndex(i => (ImageFormatKind)i.Tag == selected);
+        combo.SelectedIndex = combo.Items.Cast<ComboBoxItem>().ToList().FindIndex(i => (ImageFormatKind)i.Tag! == selected);
     }
 
     public static ImageFormatKind Selected(ComboBox combo) =>

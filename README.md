@@ -1,6 +1,6 @@
 # AllInOne : outils PDF et images (C# / .NET 8)
 
-Application de bureau Windows (WPF) et outil en ligne de commande qui regroupe les conversions qu'on fait d'habitude sur des sites web. Tout se passe sur l'ordinateur : **aucun fichier n'est envoyé sur Internet**.
+Application de bureau pour **Windows, macOS et Linux** (Avalonia) et outil en ligne de commande qui regroupe les conversions qu'on fait d'habitude sur des sites web. Tout se passe sur l'ordinateur : **aucun fichier n'est envoyé sur Internet**.
 
 Elle permet de :
 
@@ -18,18 +18,29 @@ Elle permet de :
 
 Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
 
+L'application et la ligne de commande sont disponibles en **français, anglais, allemand et espagnol**. La langue du système est
+choisie automatiquement (l'anglais si elle n'est pas proposée) ; on peut la changer en haut à droite de la fenêtre, et ce choix
+est retenu. En ligne de commande : option `--lang fr|en|de|es` ou variable d'environnement `ALLINONE_LANG`.
+
+### Traductions
+
+Le texte français sert de clé : dans le code, `L.T("Ajouter des images")` (ou `L.T("{0} page(s)", n)` avec des valeurs) ;
+dans les fichiers `.axaml`, les textes écrits en dur sont traduits automatiquement au chargement de la fenêtre. Les traductions
+sont dans `src/AllInOne.Core/Localization/en.json`, `de.json` et `es.json`. Le test `LocalizationTests` échoue si un texte
+du code ou des écrans n'a pas de traduction dans l'une des langues, ou si les marqueurs `{0}`… ne correspondent pas.
+
 ## Structure
 
 | Projet | Rôle |
 | --- | --- |
 | `src/AllInOne.Core` | Bibliothèque multiplateforme qui contient toute la logique (utilisable depuis n'importe quel programme .NET). |
-| `src/AllInOne.App` | Application de bureau WPF (Windows) avec quatre onglets. |
+| `src/AllInOne.App` | Application de bureau [Avalonia](https://avaloniaui.net/) (Windows, macOS, Linux), une page par outil. |
 | `src/AllInOne.Cli` | Outil en ligne de commande `allinone-cli` (Windows, Linux, macOS). |
 | `tests/AllInOne.Core.Tests` | Tests automatisés (xUnit). |
 
 ## Utiliser l'application de bureau
 
-Prérequis : Windows 10/11 et le [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
+Prérequis : Windows 10/11, macOS 12 ou plus récent, ou Linux x64, et le [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```powershell
 dotnet run --project src/AllInOne.App
@@ -41,18 +52,25 @@ Pour obtenir un dossier prêt à copier (`AllInOne.exe` avec ses DLL à côté) 
 dotnet publish src/AllInOne.App -c Release -o publish
 ```
 
-La compilation produit volontairement **plusieurs fichiers** (exe + DLL) plutôt qu'un seul exe géant, et ne garde que les
-bibliothèques natives Windows x64. Par défaut, elle dépend du runtime .NET installé ; ajoutez `--self-contained true` pour
+La compilation produit volontairement **plusieurs fichiers** (exe + DLL) plutôt qu'un seul exe géant. Ajoutez `-r win-x64`,
+`-r osx-arm64`, `-r osx-x64` ou `-r linux-x64` pour ne garder que les bibliothèques natives d'un système. Par défaut, elle dépend du runtime .NET installé ; ajoutez `--self-contained true` pour
 embarquer .NET (dossier environ 4 fois plus lourd, mais rien à installer).
 
 **Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
-[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux archives, contenant chacune
-`AllInOne.exe`, `allinone-cli.exe` (ligne de commande) et leurs DLL :
+[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois). Chaque archive contient l'application `AllInOne`, la ligne de commande
+`allinone-cli` et leurs bibliothèques :
 
-| Archive | Taille (zip / décompressé) | Prérequis |
+| Archive | Système | Prérequis |
 | --- | --- | --- |
-| `AllInOne-<version>-win-x64.zip` (légère) | ≈ 21 Mo / 48 Mo | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
-| `AllInOne-<version>-win-x64-autonome.zip` | ≈ 86 Mo / 194 Mo | aucun |
+| `AllInOne-<version>-win-x64.zip` (légère) | Windows 10/11 | [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
+| `AllInOne-<version>-win-x64-autonome.zip` | Windows 10/11 | aucun |
+| `AllInOne-<version>-macos-apple-silicon.zip` | Mac M1, M2, M3, M4… (macOS 12+) | aucun |
+| `AllInOne-<version>-macos-intel.zip` | Mac Intel (macOS 12+) | aucun |
+| `AllInOne-<version>-linux-x64.tar.gz` | Linux x64 | aucun (bibliothèques graphiques X11 habituelles d'un bureau) |
+
+Sur macOS, `AllInOne.app` est signée « ad hoc » mais pas par Apple (il faudrait un compte développeur payant) : à la première
+ouverture, macOS la bloque. Allez dans **Réglages Système → Confidentialité et sécurité → Ouvrir quand même** (ou, avant
+macOS Sequoia, clic droit sur l'app → **Ouvrir**). En ligne de commande : `xattr -dr com.apple.quarantine /Applications/AllInOne.app`.
 
 L'essentiel du poids restant vient des moteurs natifs : ImageMagick (≈ 25 Mo), SkiaSharp (≈ 12 Mo) et PDFium (≈ 7 Mo).
 
@@ -73,6 +91,9 @@ L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, 
 Les conversions vidéo et audio utilisent [FFmpeg](https://ffmpeg.org/), lancé comme programme séparé. Il n'est **pas inclus** dans l'exe (il pèserait environ 200 Mo de plus) :
 à la première conversion, l'application propose de le télécharger (build GPL de [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds))
 dans `%LOCALAPPDATA%\AllInOne\ffmpeg`. Si FFmpeg est déjà installé (à côté de l'exe ou dans le `PATH`), il est utilisé directement.
+Sur **macOS**, installez-le avec [Homebrew](https://brew.sh) (`brew install ffmpeg`) ; sur **Linux**, avec le gestionnaire de paquets
+(`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, `sudo pacman -S ffmpeg`). L'application le trouve aussi dans
+`/opt/homebrew/bin`, `/usr/local/bin` et `/usr/bin` même quand elle est lancée depuis le Finder.
 La variable d'environnement `ALLINONE_FFMPEG` permet d'indiquer un chemin précis.
 
 | Format | Vidéo | Audio |
@@ -123,14 +144,18 @@ Toutes les dépendances sont sous licence permissive, compatibles avec un usage 
 | Bibliothèque | Usage | Licence |
 | --- | --- | --- |
 | [PDFsharp](https://github.com/empira/PDFsharp) 6.2.4 | Création et modification des PDF | MIT |
-| [PDFtoImage](https://github.com/sungaila/PDFtoImage) | Rendu des pages PDF en images | MIT |
+| [Avalonia](https://github.com/AvaloniaUI/Avalonia) | Interface graphique (Windows, macOS, Linux) | MIT |
+| [PDFtoImage](https://github.com/sungaila/PDFtoImage) 5.2.1 | Rendu des pages PDF en images | MIT |
 | [PDFium](https://pdfium.googlesource.com/pdfium/) (binaires bblanchon) | Moteur de rendu PDF utilisé par PDFtoImage | BSD-3 / Apache 2.0 |
-| [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par PDFtoImage | MIT |
+| [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par Avalonia et PDFtoImage | MIT |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Lecture et conversion des images | Apache 2.0 |
 | [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo et audio | GPL (programme séparé) |
 
 > **Attention :** PDFsharp est volontairement figé en version **6.2.4**. Les versions 6.5 et suivantes sont passées
 > sous licence AGPL-3.0 avec une vérification de licence au démarrage. Ne mettez pas à jour ce paquet sans vérifier sa licence.
+>
+> PDFtoImage reste en **5.2.1**, qui utilise SkiaSharp 3 comme Avalonia 11 (la 5.4 passe à SkiaSharp 4,
+> incompatible avec l'interface). Vérifiez la version de SkiaSharp avant de le mettre à jour.
 
 FFmpeg est un programme indépendant, exécuté comme processus externe et téléchargé par l'utilisateur : il n'est ni lié ni
 redistribué avec AllInOne, dont la licence n'est donc pas affectée par la GPL de FFmpeg.
@@ -140,7 +165,8 @@ ImageSharp n'a pas été retenu car sa licence actuelle (Six Labors Split Licens
 ## Limites connues
 
 - Les PDF protégés par mot de passe ne sont pas pris en charge pour la modification.
-- L'application de bureau est réservée à Windows (WPF) ; la bibliothèque et la ligne de commande fonctionnent partout.
+- Les versions macOS ne sont pas signées par Apple (voir plus haut pour les ouvrir).
+- FFmpeg n'est téléchargé automatiquement que sous Windows ; sur macOS et Linux, il s'installe avec le gestionnaire de paquets.
 
 ## Tests
 
