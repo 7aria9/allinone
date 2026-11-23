@@ -16,6 +16,8 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="LOCAL" FontSize="28" FontWeight="Black" />
                     <TextBlock Text="CONVERT" FontSize="28" FontWeight="Black" Foreground="{StaticResource AccentGradient}" />
+                    <TextBlock x:Name="VersionText" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextDim}"
+                               VerticalAlignment="Bottom" Margin="10,0,0,5" />
                 </StackPanel>
                 <TextBlock Text="Tes PDF, images, vidéos et sons, sans rien envoyer sur Internet" Foreground="{StaticResource TextDim}" FontSize="13" />
                 </StackPanel>
