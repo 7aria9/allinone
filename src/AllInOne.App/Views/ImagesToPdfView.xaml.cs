@@ -16,6 +16,7 @@ public partial class ImagesToPdfView : UserControl
     {
         InitializeComponent();
         Files.ItemsSource = _items;
+        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
     }
 
@@ -62,12 +63,12 @@ public partial class ImagesToPdfView : UserControl
     {
         if (_items.Count == 0)
         {
-            MessageBox.Show(Window.GetWindow(this), "Ajoutez au moins une image.", "AllInOne");
+            Dialog.Show(Window.GetWindow(this), "Ajoutez au moins une image.", "AllInOne");
             return;
         }
         if (!double.TryParse(MarginBox.Text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var margin) || margin < 0)
         {
-            MessageBox.Show(Window.GetWindow(this), "La marge doit être un nombre positif (en millimètres).", "AllInOne");
+            Dialog.Show(Window.GetWindow(this), "La marge doit être un nombre positif (en millimètres).", "AllInOne");
             return;
         }
 

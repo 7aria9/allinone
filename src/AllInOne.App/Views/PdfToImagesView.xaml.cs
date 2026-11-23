@@ -67,7 +67,7 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(Window.GetWindow(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
+            Dialog.Show(Window.GetWindow(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -78,20 +78,16 @@ public partial class PdfToImagesView : UserControl
         var pdf = PdfPath.Text;
         if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf))
         {
-            MessageBox.Show(owner, "Choisissez d'abord un fichier PDF.", "AllInOne");
+            Dialog.Show(owner, "Choisissez d'abord un fichier PDF.", "AllInOne");
             return;
         }
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0)
         {
-            MessageBox.Show(owner, "Choisissez un dossier de sortie.", "AllInOne");
+            Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne");
             return;
         }
-        if (!int.TryParse(Dpi.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dpi) || dpi < 10 || dpi > 1200)
-        {
-            MessageBox.Show(owner, "La résolution doit être un nombre entre 10 et 1200.", "AllInOne");
-            return;
-        }
+        var dpi = Dpi.SelectedItem is ComboBoxItem { Tag: string t } ? int.Parse(t, CultureInfo.InvariantCulture) : 150;
 
         IReadOnlyList<int> pages;
         try
@@ -100,7 +96,7 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(owner, ex.Message, "AllInOne");
+            Dialog.Show(owner, ex.Message, "AllInOne");
             return;
         }
 

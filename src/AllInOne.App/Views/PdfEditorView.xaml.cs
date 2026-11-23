@@ -63,6 +63,7 @@ public partial class PdfEditorView : UserControl
     {
         for (var i = 0; i < _pages.Count; i++) _pages[i].Number = i + 1;
         var files = _pages.Select(p => p.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        EmptyHint.Visibility = _pages.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         Summary.Text = _pages.Count == 0 ? "Aucune page." : $"{_pages.Count} page(s) provenant de {files} fichier(s).";
         if (_pages.Count == 0) { _firstPdf = null; _pdfCache.Clear(); }
     }
@@ -155,7 +156,7 @@ public partial class PdfEditorView : UserControl
     {
         if (_pages.Count == 0)
         {
-            MessageBox.Show(Window.GetWindow(this), "Le document ne contient aucune page.", "AllInOne");
+            Dialog.Show(Window.GetWindow(this), "Le document ne contient aucune page.", "AllInOne");
             return;
         }
 
