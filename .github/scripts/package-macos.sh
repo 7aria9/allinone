@@ -37,9 +37,25 @@ PLIST
 
 # Signature ad hoc : obligatoire pour lancer du code natif sur les Mac Apple Silicon.
 # Elle ne remplace pas une signature Apple : macOS affiche quand même un avertissement à la première ouverture.
-codesign --force --deep --sign - "$app"
-codesign --verify --deep --strict "$app"
+# Sur Mac : codesign. Ailleurs (Linux) : rcodesign, installé par install-rcodesign.sh.
+if command -v codesign >/dev/null 2>&1; then
+  codesign --force --deep --sign - "$app"
+  codesign --verify --deep --strict "$app"
+else
+  rcodesign sign "$app"
+  # « rcodesign verify » ne sait pas lire les signatures ad hoc (pas de CMS) : on affiche
+  # simplement la signature des exécutables, ce qui échoue s'ils n'en ont pas.
+  for exe in LocalConvert localconvert-cli; do
+    rcodesign print-signature-info "$app/Contents/MacOS/$exe" > /dev/null && echo "$exe : signature présente"
+  done
+fi
 
 rm -f "$zip"
-ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
+if command -v ditto >/dev/null 2>&1; then
+  ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
+else
+  # zip garde les droits d'exécution et, avec -y, les liens symboliques.
+  zip_abs="$(cd "$(dirname "$zip")" && pwd)/$(basename "$zip")"
+  (cd "$(dirname "$app")" && zip -qry "$zip_abs" "$(basename "$app")")
+fi
 ls -l "$zip"

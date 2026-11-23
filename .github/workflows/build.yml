@@ -85,3 +85,26 @@ jobs:
         with:
           name: captures-macos
           path: screenshots/
+
+  # Paquets Mac préparés sous Linux, comme pour la release : vérifie la compilation croisée et la signature ad hoc.
+  macos-paquets-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Installation de rcodesign
+        run: ./.github/scripts/install-rcodesign.sh
+      - name: Publication et paquets .app (Apple Silicon et Intel)
+        run: |
+          for rid in osx-arm64 osx-x64; do
+            dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
+            dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
+            mkdir -p dist/$rid
+            ./.github/scripts/package-macos.sh publish/$rid 0.0.0 dist/$rid/LocalConvert-$rid.zip
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paquets-macos
+          path: dist/*/LocalConvert-*.zip
