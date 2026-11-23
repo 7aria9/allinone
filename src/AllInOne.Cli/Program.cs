@@ -203,7 +203,7 @@ public static class Program
                 break;
             }
             default:
-                throw new ArgumentException($"Commande inconnue : {command}. Tapez « allinone --help ».");
+                throw new ArgumentException($"Commande inconnue : {command}. Tapez « allinone-cli --help ».");
         }
     }
 
@@ -274,6 +274,6 @@ internal sealed class Args
 
     public void Require(int count, string usage)
     {
-        if (Positional.Count < count) throw new ArgumentException("Usage : allinone " + usage);
+        if (Positional.Count < count) throw new ArgumentException("Usage : allinone-cli " + usage);
     }
 }
