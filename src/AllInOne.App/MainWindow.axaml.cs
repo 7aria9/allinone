@@ -79,7 +79,7 @@ public partial class MainWindow : Window
     internal async Task RenderEveryPageForSmokeTestAsync(string? screenshotDirectory)
     {
         if (screenshotDirectory is not null) Directory.CreateDirectory(screenshotDirectory);
-        var names = new[] { "1-images-pdf", "2-modifier", "3-compresser", "4-decouper", "5-pdf-images", "6-images", "7-videos", "8-sons" };
+        var names = new[] { "1-images-pdf", "2-modifier", "3-compresser", "4-decouper", "5-pdf-images", "6-pdf-documents", "7-images", "8-videos", "9-sons" };
         for (var i = 0; i < Pages.Children.Count; i++)
         {
             if (Pages.Children[i] is Views.IMediaListView media) media.AddSmokeTestSamples();

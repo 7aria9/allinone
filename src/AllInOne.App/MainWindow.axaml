@@ -47,9 +47,10 @@
                 <RadioButton Classes="nav" GroupName="nav" Content="🗜   Compresser un PDF" Tag="2" IsCheckedChanged="Nav_Checked" />
                 <RadioButton Classes="nav" GroupName="nav" Content="✂   Découper un PDF" Tag="3" IsCheckedChanged="Nav_Checked" />
                 <RadioButton Classes="nav" GroupName="nav" Content="🧩   PDF → images" Tag="4" IsCheckedChanged="Nav_Checked" />
-                <RadioButton Classes="nav" GroupName="nav" Content="🔁   Convertir des images" Tag="5" IsCheckedChanged="Nav_Checked" />
-                <RadioButton Classes="nav" GroupName="nav" Content="🎬   Vidéos et GIF" Tag="6" IsCheckedChanged="Nav_Checked" />
-                <RadioButton Classes="nav" GroupName="nav" Content="🎵   Convertir des sons" Tag="7" IsCheckedChanged="Nav_Checked" />
+                <RadioButton Classes="nav" GroupName="nav" Content="📝   PDF → Word / texte" Tag="5" IsCheckedChanged="Nav_Checked" />
+                <RadioButton Classes="nav" GroupName="nav" Content="🔁   Convertir des images" Tag="6" IsCheckedChanged="Nav_Checked" />
+                <RadioButton Classes="nav" GroupName="nav" Content="🎬   Vidéos et GIF" Tag="7" IsCheckedChanged="Nav_Checked" />
+                <RadioButton Classes="nav" GroupName="nav" Content="🎵   Convertir des sons" Tag="8" IsCheckedChanged="Nav_Checked" />
             </StackPanel>
         </Border>
 
@@ -60,6 +61,7 @@
             <views:CompressPdfView IsVisible="False" />
             <views:SplitPdfView IsVisible="False" />
             <views:PdfToImagesView IsVisible="False" />
+            <views:PdfToDocumentView IsVisible="False" />
             <views:ConvertImagesView IsVisible="False" />
             <views:ConvertVideosView IsVisible="False" />
             <views:ConvertAudioView IsVisible="False" />
