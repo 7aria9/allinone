@@ -1,0 +1,35 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Tests de la bibliothèque
+        run: dotnet test tests/AllInOne.Core.Tests -c Release
+
+  windows-app:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Tests (Windows)
+        run: dotnet test tests/AllInOne.Core.Tests -c Release
+      - name: Publication de l'application de bureau
+        run: dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/app
+      - name: Publication de la ligne de commande
+        run: dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/cli
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AllInOne-win-x64
+          path: publish/

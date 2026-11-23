@@ -1,0 +1,53 @@
+name: release
+
+# Publie une release GitHub avec les .exe Windows à chaque fusion dans main
+# (une pull request validée = un push sur main).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      # Numéro de version auto-incrémenté : 1.0.<numéro d'exécution du workflow>.
+      VERSION: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Tests
+        run: dotnet test tests/AllInOne.Core.Tests -c Release
+
+      - name: Publication de l'application de bureau
+        run: dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ env.VERSION }} -o publish/app
+
+      - name: Publication de la ligne de commande
+        run: dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ env.VERSION }} -o publish/cli
+
+      - name: Préparation des fichiers
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item publish/app/AllInOne.exe "release/AllInOne-$env:VERSION-win-x64.exe"
+          Copy-Item publish/cli/allinone.exe "release/allinone-cli-$env:VERSION-win-x64.exe"
+
+      - name: Création de la release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          $title = "AllInOne $env:VERSION"
+          gh release create $tag (Get-ChildItem release/*.exe).FullName --title $title --target $env:GITHUB_SHA --generate-notes
