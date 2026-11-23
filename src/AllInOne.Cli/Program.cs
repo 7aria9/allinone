@@ -29,6 +29,8 @@ public static class Program
           convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp|avif [--quality 90] [--max-width px] [--max-height px]
           video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov|gif [--quality haute|moyenne|faible]
                      [--max-height 720] [--no-audio] [--copy] [--start 1:30] [--end 2:45]   (nécessite FFmpeg dans le PATH)
+          frames     <dossier> <vidéo...> [--format png|jpg] [--fps 1] [--start 0:10] [--end 0:20] [--quality 90]
+                     [--max-height 720]   extrait les images (toutes par défaut) dans <dossier>/<nom>_images
           audio      <dossier> <son|vidéo...> --format mp3|wav|aiff|flac|ogg|opus|m4a [--quality haute|moyenne|faible]
                      [--rate 44100] [--channels 1|2] [--start 0:30] [--end 1:00]   (nécessite FFmpeg dans le PATH)
           info       <entrée.pdf>
@@ -200,6 +202,26 @@ public static class Program
                 var files = VideoConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options, progress,
                     status: new Progress<string>(m => Console.Write("\r" + m + Environment.NewLine))).GetAwaiter().GetResult();
                 Console.WriteLine($"\r{files.Count} vidéo(s) convertie(s) dans {a.Positional[0]}");
+                break;
+            }
+            case "frames":
+            {
+                a.Require(2, "frames <dossier> <vidéo...>");
+                var options = new FrameExtractionOptions
+                {
+                    Format = ImageFormats.Parse(a.Get("format") ?? "png"),
+                    FramesPerSecond = a.Get("fps") is { } f ? double.Parse(f.Replace(',', '.'), CultureInfo.InvariantCulture) : null,
+                    JpegQuality = Int(a.Get("quality") ?? "90"),
+                    MaxHeight = a.Get("max-height") is { } h ? Int(h) : null,
+                    Start = Time(a.Get("start")),
+                    End = Time(a.Get("end")),
+                };
+                foreach (var video in a.Positional.Skip(1))
+                {
+                    var folder = FileNames.UniqueDirectory(Path.Combine(a.Positional[0], Path.GetFileNameWithoutExtension(video) + "_images"));
+                    var files = VideoFrames.ExtractAsync(video, folder, options).GetAwaiter().GetResult();
+                    Console.WriteLine($"{files.Count} image(s) extraite(s) dans {folder}");
+                }
                 break;
             }
             case "audio":

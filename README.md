@@ -13,7 +13,8 @@ Elle permet de :
 - **convertir des images d'un format à un autre** (PNG, JPEG, WebP, AVIF, BMP, GIF, TIFF), avec redimensionnement optionnel. Les photos **HEIC** des iPhone sont lues partout (conversion, images → PDF) ;
 - **convertir des sons** en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A (et extraire le son d'une vidéo) ;
 - **convertir des vidéos** en MP4, MKV, WebM, AVI, OGG, MOV ou **GIF animé** (qualité, résolution maximale, suppression du son, changement de conteneur sans réencodage) ;
-- **couper un extrait** d'un son ou d'une vidéo (début et fin).
+- **couper un extrait** d'un son ou d'une vidéo (début et fin) ;
+- **extraire les images d'une vidéo** en PNG ou JPEG : toutes, ou à intervalle régulier (1 par seconde…), sur toute la vidéo ou entre deux positions.
 
 Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
 
@@ -63,7 +64,7 @@ L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, 
 4. **Découper un PDF** : une page par fichier, toutes les N pages, ou selon des plages où chaque plage donne un fichier (`1-3, 4-7, 8-`).
 5. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
 6. **Convertir des images** : convertissez un lot d'images (dont HEIC) vers un autre format, avec largeur/hauteur maximales optionnelles.
-7. **Vidéos et GIF** : ajoutez ou glissez des vidéos (ou des GIF), choisissez le format, dont le GIF animé, la qualité et la résolution maximale. Les champs Début et Fin gardent seulement un extrait (ex. de `1:30` à `2:45`). Un bouton « Arrêter » interrompt la conversion.
+7. **Vidéos et GIF** : ajoutez ou glissez des vidéos (ou des GIF), choisissez le format, dont le GIF animé, la qualité et la résolution maximale. Les champs Début et Fin gardent seulement un extrait (ex. de `1:30` à `2:45`). Les formats « Images PNG » et « Images JPEG » extraient les images de la vidéo (toutes, ou 1 par seconde, 1 toutes les 5 s…) dans un dossier `<nom>_images` ; au-delà d'environ 3 000 images, une confirmation est demandée. Un bouton « Arrêter » interrompt la conversion.
    Chaque ligne affiche les caractéristiques du fichier (durée, résolution, codecs, images/s, débit, taille) puis, pendant la conversion, sa propre barre de progression et le temps restant estimé. Un fichier en échec n'arrête pas les suivants.
 8. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio. Début et Fin permettent de couper un extrait. Comme pour les vidéos, chaque ligne montre durée, codec, débit, fréquence, canaux et taille, puis l'avancement et le temps restant.
 
@@ -109,6 +110,8 @@ allinone-cli video sortie/ film.mp4 --format mkv --copy        # changement de c
 allinone-cli audio sortie/ morceau.wav concert.aiff --format mp3 --quality haute
 allinone-cli audio sortie/ film.mp4 --format flac                # extrait le son d'une vidéo
 allinone-cli video sortie/ film.mp4 --format gif --start 0:12 --end 0:18 --quality faible
+allinone-cli frames sortie/ film.mp4 --format jpg --fps 1 --start 1:00 --end 2:00   # 1 image par seconde
+allinone-cli frames sortie/ clip.mov                                               # toutes les images, en PNG
 allinone-cli audio sortie/ concert.wav --format mp3 --start 1:30 --end 4:05
 allinone-cli convert sortie/ IMG_0001.HEIC IMG_0002.HEIC --format jpg
 ```

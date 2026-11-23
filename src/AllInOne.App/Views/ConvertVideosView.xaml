@@ -17,7 +17,7 @@
 
         <TextBlock Grid.ColumnSpan="2" Text="Convertir des vidéos" Style="{StaticResource PageTitle}" />
         <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Hint}"
-                   Text="Convertis tes vidéos en MP4, MKV, WebM, AVI, OGG, MOV ou GIF animé, en entier ou seulement un extrait. Les originaux ne sont jamais modifiés. La conversion utilise FFmpeg, téléchargé automatiquement la première fois." />
+                   Text="Convertis tes vidéos en MP4, MKV, WebM, AVI, OGG, MOV ou GIF animé, en entier ou seulement un extrait, ou extrais-en les images en PNG ou JPEG. Les originaux ne sont jamais modifiés. La conversion utilise FFmpeg, téléchargé automatiquement la première fois." />
 
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,16,0">
             <DockPanel>
@@ -56,6 +56,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Label Content="Format" />
                     <ComboBox Grid.Column="1" x:Name="Format" SelectedIndex="0" Margin="0,0,0,8" SelectionChanged="Format_SelectionChanged">
@@ -66,6 +67,8 @@
                         <ComboBoxItem Content="OGG (Theora + Vorbis)" Tag="Ogg" />
                         <ComboBoxItem Content="MOV (H.264 + AAC)" Tag="Mov" />
                         <ComboBoxItem Content="GIF animé (sans son)" Tag="Gif" />
+                        <ComboBoxItem Content="Images PNG (extraire les images)" Tag="FramesPng" />
+                        <ComboBoxItem Content="Images JPEG (extraire les images)" Tag="FramesJpeg" />
                     </ComboBox>
                     <Label Grid.Row="1" Content="Qualité" />
                     <ComboBox Grid.Row="1" Grid.Column="1" x:Name="Quality" SelectedIndex="1" Margin="0,0,0,8">
@@ -81,6 +84,16 @@
                         <ComboBoxItem Content="720p (HD)" Tag="720" />
                         <ComboBoxItem Content="480p" Tag="480" />
                         <ComboBoxItem Content="360p" Tag="360" />
+                    </ComboBox>
+                    <Label Grid.Row="3" x:Name="FrameRateLabel" Content="Images" Visibility="Collapsed" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="FrameRate" SelectedIndex="1" Margin="0,0,0,8" Visibility="Collapsed">
+                        <ComboBoxItem Content="Toutes les images de la vidéo" Tag="0" />
+                        <ComboBoxItem Content="1 image par seconde" Tag="1" />
+                        <ComboBoxItem Content="2 images par seconde" Tag="2" />
+                        <ComboBoxItem Content="5 images par seconde" Tag="5" />
+                        <ComboBoxItem Content="1 image toutes les 2 secondes" Tag="0.5" />
+                        <ComboBoxItem Content="1 image toutes les 5 secondes" Tag="0.2" />
+                        <ComboBoxItem Content="1 image toutes les 10 secondes" Tag="0.1" />
                     </ComboBox>
                 </Grid>
                 <CheckBox x:Name="RemoveAudio" Content="Supprimer le son" Margin="0,4,0,8" />

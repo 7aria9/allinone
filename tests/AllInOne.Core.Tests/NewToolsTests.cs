@@ -268,3 +268,82 @@ public sealed class NewToolsTests : IDisposable
         public void Report(double value) { lock (this) report(value); }
     }
 }
+
+public sealed class VideoFramesTests : IDisposable
+{
+    private readonly TestFiles _files = new();
+    private readonly string? _ffmpeg = FfmpegLocator.Find();
+    public void Dispose() => _files.Dispose();
+
+    [Fact]
+    public void Arguments_for_one_frame_per_second_in_jpeg()
+    {
+        var line = string.Join(' ', VideoFrames.Arguments("in.mp4", "out_%05d.jpg",
+            new FrameExtractionOptions { Format = ImageFormat(), FramesPerSecond = 1, JpegQuality = 100, Start = TimeSpan.FromSeconds(3) }));
+        Assert.Contains("-ss 3 -i in.mp4", line);
+        Assert.Contains("-vf fps=1", line);
+        Assert.Contains("-q:v 2", line);
+        static ImageFormatKind ImageFormat() => ImageFormatKind.Jpeg;
+    }
+
+    [Fact]
+    public void All_frames_keep_every_frame() =>
+        Assert.Contains("-fps_mode passthrough", string.Join(' ', VideoFrames.Arguments("in.mp4", "o_%05d.png", new FrameExtractionOptions())));
+
+    [Fact]
+    public void Other_formats_are_refused() =>
+        Assert.Throws<ArgumentException>(() => VideoFrames.Arguments("in.mp4", "o.gif", new FrameExtractionOptions { Format = ImageFormatKind.Gif }));
+
+    [Fact]
+    public void Estimate_uses_the_passage_and_the_rate()
+    {
+        var info = new MediaInfo { Duration = TimeSpan.FromSeconds(60), FrameRate = 30 };
+        Assert.Equal(1800, VideoFrames.EstimateCount(info, new FrameExtractionOptions()));
+        Assert.Equal(10, VideoFrames.EstimateCount(info, new FrameExtractionOptions { FramesPerSecond = 1, Start = TimeSpan.FromSeconds(10), End = TimeSpan.FromSeconds(20) }));
+    }
+
+    private string Clip(int seconds)
+    {
+        var path = _files.Path_("clip.mp4");
+        var psi = new System.Diagnostics.ProcessStartInfo(_ffmpeg!) { RedirectStandardError = true, UseShellExecute = false };
+        foreach (var a in new[] { "-hide_banner", "-y", "-f", "lavfi", "-i", $"testsrc=size=320x240:rate=25:duration={seconds}", "-pix_fmt", "yuv420p", path })
+            psi.ArgumentList.Add(a);
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        p.StandardError.ReadToEnd();
+        p.WaitForExit();
+        return path;
+    }
+
+    [Fact]
+    public async Task Extracts_every_frame()
+    {
+        if (_ffmpeg is null) return;
+        var files = await VideoFrames.ExtractAsync(Clip(2), _files.Path_("all"));
+        Assert.Equal(50, files.Count);
+        Assert.Equal("clip_00001.png", Path.GetFileName(files[0]));
+    }
+
+    [Fact]
+    public async Task Extracts_one_jpeg_per_second_between_two_positions()
+    {
+        if (_ffmpeg is null) return;
+        var files = await VideoFrames.ExtractAsync(Clip(6), _files.Path_("some"), new FrameExtractionOptions
+        {
+            Format = ImageFormatKind.Jpeg, FramesPerSecond = 1, Start = TimeSpan.FromSeconds(1), End = TimeSpan.FromSeconds(4), MaxHeight = 120,
+        });
+        Assert.Equal(3, files.Count);
+        using var image = new ImageMagick.MagickImage(files[0]);
+        Assert.Equal(ImageMagick.MagickFormat.Jpeg, image.Format);
+        Assert.Equal(120u, image.Height);
+    }
+
+    [Fact]
+    public async Task Passage_after_the_end_reports_an_error_and_leaves_nothing()
+    {
+        if (_ffmpeg is null) return;
+        var dir = _files.Path_("none");
+        await Assert.ThrowsAsync<VideoConversionException>(() =>
+            VideoFrames.ExtractAsync(Clip(2), dir, new FrameExtractionOptions { Start = TimeSpan.FromSeconds(30) }));
+        Assert.Empty(Directory.EnumerateFiles(dir));
+    }
+}
