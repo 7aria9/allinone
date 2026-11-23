@@ -52,9 +52,18 @@ public partial class ConvertVideosView : UserControl, IMediaListView
     private void Remove_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
     private void Clear_Click(object sender, RoutedEventArgs e) => _items.Clear();
 
-    private void Copy_Changed(object sender, RoutedEventArgs e)
+    private VideoFormat SelectedFormat => Enum.Parse<VideoFormat>((string)((ComboBoxItem)Format.SelectedItem).Tag);
+
+    private void Copy_Changed(object sender, RoutedEventArgs e) => UpdateOptions();
+    private void Format_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateOptions();
+
+    /// <summary>Le GIF n'a pas de son et se réencode toujours ; la copie des flux ignore qualité et résolution.</summary>
+    private void UpdateOptions()
     {
-        var reencode = CopyStreams.IsChecked != true;
+        if (CopyStreams is null || RemoveAudio is null) return; // pendant InitializeComponent
+        var gif = SelectedFormat == VideoFormat.Gif;
+        CopyStreams.IsEnabled = RemoveAudio.IsEnabled = !gif;
+        var reencode = gif || CopyStreams.IsChecked != true;
         Quality.IsEnabled = Resolution.IsEnabled = reencode;
     }
 
@@ -77,18 +86,22 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
+        if (!MediaItems.TryReadTrim(TrimStart, TrimEnd, owner, out var trimStart, out var trimEnd)) return;
+
         var ready = await FfmpegSetup.EnsureAsync(this);
         RefreshFfmpegStatus();
         if (!ready) return;
 
-        var format = Enum.Parse<VideoFormat>((string)((ComboBoxItem)Format.SelectedItem).Tag);
+        var format = SelectedFormat;
         var height = int.Parse((string)((ComboBoxItem)Resolution.SelectedItem).Tag);
         var options = new VideoConversionOptions
         {
             Quality = Enum.Parse<VideoQuality>((string)((ComboBoxItem)Quality.SelectedItem).Tag),
             MaxHeight = height > 0 ? height : null,
+            CopyStreams = CopyStreams.IsChecked == true && format != VideoFormat.Gif,
             RemoveAudio = RemoveAudio.IsChecked == true,
-            CopyStreams = CopyStreams.IsChecked == true,
+            Start = trimStart,
+            End = trimEnd,
         };
         var items = _items.ToList();
         var window = MainWindow.Of(this);
@@ -96,7 +109,7 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         var ok = await window.RunBusyAsync($"Conversion de {items.Count} vidéo(s)…",
             async (p, ct) => result = await MediaItems.ConvertAsync(items, outputDir, format.Extension(),
                 (input, output, progress, token) => VideoConverter.ConvertAsync(input, output, format, options, progress, token),
-                p, window.SetStatus, Files.ScrollIntoView, ct),
+                p, window.SetStatus, Files.ScrollIntoView, ct, trimStart, trimEnd),
             $"Vidéos converties dans {outputDir}", cancellable: true);
         if (!ok || result is null) return;
         var count = result.Written.Count;

@@ -32,7 +32,7 @@ public class FfmpegArgumentsTests
     {
         var line = string.Join(' ', FfmpegArguments.Build("a.mp4", "b.webm", VideoFormat.Webm,
             new VideoConversionOptions { MaxHeight = 480, RemoveAudio = true }));
-        Assert.Contains("scale=-2:'min(480,ih)'", line);
+        Assert.Contains("scale=-2:'trunc(min(480,ih)/2)*2'", line);
         Assert.Contains("-an", line);
         Assert.DoesNotContain("libopus", line);
         Assert.DoesNotContain("0:a:0", line);

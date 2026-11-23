@@ -13,6 +13,7 @@ internal static class FormatChoices
                      (ImageFormatKind.Png, "PNG"),
                      (ImageFormatKind.Jpeg, "JPEG"),
                      (ImageFormatKind.Webp, "WebP"),
+                     (ImageFormatKind.Avif, "AVIF"),
                      (ImageFormatKind.Bmp, "BMP"),
                      (ImageFormatKind.Gif, "GIF"),
                      (ImageFormatKind.Tiff, "TIFF"),

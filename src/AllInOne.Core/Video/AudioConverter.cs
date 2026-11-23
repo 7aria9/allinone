@@ -66,6 +66,12 @@ public sealed record AudioConversionOptions
 
     /// <summary>Nombre de canaux (1 = mono, 2 = stéréo). Null = comme l'original.</summary>
     public int? Channels { get; init; }
+
+    /// <summary>Début de l'extrait à garder (null = depuis le début).</summary>
+    public TimeSpan? Start { get; init; }
+
+    /// <summary>Fin de l'extrait à garder (null = jusqu'à la fin).</summary>
+    public TimeSpan? End { get; init; }
 }
 
 /// <summary>Construit la ligne de commande FFmpeg pour une conversion audio.</summary>
@@ -73,7 +79,10 @@ public static class FfmpegAudioArguments
 {
     public static IReadOnlyList<string> Build(string input, string output, AudioFormat format, AudioConversionOptions options)
     {
-        var args = new List<string> { "-hide_banner", "-nostdin", "-y", "-i", input, "-map", "0:a:0", "-vn", "-sn", "-dn" };
+        var args = new List<string> { "-hide_banner", "-nostdin", "-y" };
+        args.AddRange(Trim.BeforeInput(options.Start, options.End));
+        args.AddRange(new[] { "-i", input, "-map", "0:a:0", "-vn", "-sn", "-dn" });
+        args.AddRange(Trim.AfterInput(options.Start, options.End));
         if (options.SampleRate is int rate and > 0) args.AddRange(new[] { "-ar", rate.ToString(System.Globalization.CultureInfo.InvariantCulture) });
         if (options.Channels is int ch and > 0) args.AddRange(new[] { "-ac", ch.ToString(System.Globalization.CultureInfo.InvariantCulture) });
 
@@ -116,7 +125,7 @@ public static class AudioConverter
             throw new InvalidOperationException("Le fichier de sortie doit être différent du fichier d'origine.");
 
         var args = FfmpegAudioArguments.Build(inputPath, outputPath, format, options);
-        await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken);
+        await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken, options.Start, options.End);
     }
 
     public static async Task<IReadOnlyList<string>> ConvertManyAsync(IReadOnlyList<string> inputs, string outputDirectory,

@@ -86,6 +86,8 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
+        if (!MediaItems.TryReadTrim(TrimStart, TrimEnd, owner, out var trimStart, out var trimEnd)) return;
+
         var ready = await FfmpegSetup.EnsureAsync(this);
         RefreshFfmpegStatus();
         if (!ready) return;
@@ -96,6 +98,8 @@ public partial class ConvertAudioView : UserControl, IMediaListView
             Quality = Enum.Parse<VideoQuality>((string)((ComboBoxItem)Quality.SelectedItem).Tag),
             SampleRate = TagNumber(SampleRate),
             Channels = TagNumber(Channels),
+            Start = trimStart,
+            End = trimEnd,
         };
         var items = _items.ToList();
         var window = MainWindow.Of(this);
@@ -103,7 +107,7 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         var ok = await window.RunBusyAsync($"Conversion de {items.Count} fichier(s)…",
             async (p, ct) => result = await MediaItems.ConvertAsync(items, outputDir, format.Extension(),
                 (input, output, progress, token) => AudioConverter.ConvertAsync(input, output, format, options, progress, token),
-                p, window.SetStatus, Files.ScrollIntoView, ct),
+                p, window.SetStatus, Files.ScrollIntoView, ct, trimStart, trimEnd),
             $"Sons convertis dans {outputDir}", cancellable: true);
         if (!ok || result is null) return;
         var count = result.Written.Count;

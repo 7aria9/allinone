@@ -37,10 +37,12 @@
                 <TextBlock Text="OUTILS" Style="{StaticResource SectionTitle}" Margin="14,0,0,10" />
                 <RadioButton Style="{StaticResource NavButton}" Content="🖼   Images → PDF" Tag="0" IsChecked="True" Checked="Nav_Checked" />
                 <RadioButton Style="{StaticResource NavButton}" Content="📄   Modifier / fusionner" Tag="1" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavButton}" Content="🧩   PDF → images" Tag="2" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavButton}" Content="🔁   Convertir des images" Tag="3" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavButton}" Content="🎬   Convertir des vidéos" Tag="4" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavButton}" Content="🎵   Convertir des sons" Tag="5" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🗜   Compresser un PDF" Tag="2" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="✂   Découper un PDF" Tag="3" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🧩   PDF → images" Tag="4" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🔁   Convertir des images" Tag="5" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🎬   Vidéos et GIF" Tag="6" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🎵   Convertir des sons" Tag="7" Checked="Nav_Checked" />
             </StackPanel>
         </Border>
 
@@ -48,6 +50,8 @@
         <Grid x:Name="Pages" Margin="24,20,24,16">
             <views:ImagesToPdfView />
             <views:PdfEditorView Visibility="Collapsed" />
+            <views:CompressPdfView Visibility="Collapsed" />
+            <views:SplitPdfView Visibility="Collapsed" />
             <views:PdfToImagesView Visibility="Collapsed" />
             <views:ConvertImagesView Visibility="Collapsed" />
             <views:ConvertVideosView Visibility="Collapsed" />

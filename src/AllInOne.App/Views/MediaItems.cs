@@ -21,17 +21,20 @@ public sealed class MediaItem : Observable
     private string _statusText = "";
     private string? _error;
 
-    public MediaItem(string path, bool isVideo)
+    public MediaItem(string path, bool isVideo) : this(path, isVideo ? "🎬" : "🎵") => IsVideo = isVideo;
+
+    /// <summary>Ligne d'un autre type de fichier (PDF…), avec son icône.</summary>
+    public MediaItem(string path, string icon)
     {
         Path = path;
-        IsVideo = isVideo;
+        Icon = icon;
     }
 
     public string Path { get; }
     public bool IsVideo { get; }
     public string Name => System.IO.Path.GetFileName(Path);
     public string Folder => System.IO.Path.GetDirectoryName(Path) ?? "";
-    public string Icon => IsVideo ? "🎬" : "🎵";
+    public string Icon { get; }
 
     /// <summary>Caractéristiques lues avec FFmpeg, ou null si pas encore lues.</summary>
     public MediaInfo? Media { get; private set; }
@@ -113,6 +116,28 @@ internal static class MediaItems
         }
     }
 
+    /// <summary>Lit les champs Début / Fin d'un extrait. Affiche un message et renvoie false si la saisie est invalide.</summary>
+    public static bool TryReadTrim(System.Windows.Controls.TextBox start, System.Windows.Controls.TextBox end, System.Windows.Window? owner,
+        out TimeSpan? from, out TimeSpan? to)
+    {
+        to = null;
+        if (!Trim.TryParseTime(start.Text, out from) || !Trim.TryParseTime(end.Text, out to))
+        {
+            Dialog.Show(owner, "Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes).", "AllInOne");
+            return false;
+        }
+        try
+        {
+            Trim.Validate(from, to);
+            return true;
+        }
+        catch (ArgumentException ex)
+        {
+            Dialog.Show(owner, ex.Message, "AllInOne");
+            return false;
+        }
+    }
+
     /// <summary>Lignes d'exemple, une par état, sans lancer FFmpeg.</summary>
     public static IEnumerable<MediaItem> SmokeTestSamples(bool isVideo)
     {
@@ -146,17 +171,28 @@ internal static class MediaItems
     /// le texte d'état montrent l'ensemble, pondéré par la durée de chaque fichier. Une erreur sur un fichier
     /// n'arrête pas les suivants. Doit être appelé depuis le fil de l'interface.
     /// </summary>
-    public static async Task<Result> ConvertAsync(IReadOnlyList<MediaItem> items, string outputDirectory, string extension,
+    public static Task<Result> ConvertAsync(IReadOnlyList<MediaItem> items, string outputDirectory, string extension,
         Func<string, string, IProgress<double>, CancellationToken, Task> convert,
-        IProgress<double> overall, Action<string> status, Action<MediaItem> onStart, CancellationToken cancellationToken)
+        IProgress<double> overall, Action<string> status, Action<MediaItem> onStart, CancellationToken cancellationToken,
+        TimeSpan? trimStart = null, TimeSpan? trimEnd = null) =>
+        ConvertAsync(items, outputDirectory, extension,
+            async (i, o, p, ct) => { await convert(i, o, p, ct); return null; },
+            overall, status, onStart, cancellationToken, trimStart, trimEnd);
+
+    /// <summary>Variante où la conversion renvoie le texte à afficher sur la ligne une fois terminée (null = « ✓ Terminé en … »).</summary>
+    public static async Task<Result> ConvertAsync(IReadOnlyList<MediaItem> items, string outputDirectory, string extension,
+        Func<string, string, IProgress<double>, CancellationToken, Task<string?>> convert,
+        IProgress<double> overall, Action<string> status, Action<MediaItem> onStart, CancellationToken cancellationToken,
+        TimeSpan? trimStart = null, TimeSpan? trimEnd = null)
     {
         Directory.CreateDirectory(outputDirectory);
         foreach (var item in items) item.Reset(MediaState.Waiting);
 
         // Poids de chaque fichier = sa durée (à défaut, la durée moyenne des autres).
-        var known = items.Select(i => i.Media?.Duration?.TotalSeconds ?? 0).Where(d => d > 0).ToList();
+        double? Seconds(MediaItem i) => i.Media?.Duration?.TotalSeconds is > 0 and var d ? Trim.EffectiveSeconds(d, trimStart, trimEnd) : null;
+        var known = items.Select(Seconds).OfType<double>().ToList();
         var fallback = known.Count > 0 ? known.Average() : 1;
-        var weights = items.Select(i => i.Media?.Duration?.TotalSeconds is > 0 and var d ? d : fallback).ToArray();
+        var weights = items.Select(i => Seconds(i) ?? fallback).ToArray();
         var total = weights.Sum();
 
         var written = new List<string>();
@@ -191,10 +227,10 @@ internal static class MediaItems
             var target = AllInOne.Core.FileNames.Unique(Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(item.Path) + extension));
             try
             {
-                await convert(item.Path, target, progress, cancellationToken);
+                var done = await convert(item.Path, target, progress, cancellationToken);
                 item.State = MediaState.Done;
                 item.Progress = 1;
-                item.StatusText = $"✓ Terminé en {MediaInfo.FormatDuration(fileClock.Elapsed)}";
+                item.StatusText = done ?? $"✓ Terminé en {MediaInfo.FormatDuration(fileClock.Elapsed)}";
                 written.Add(target);
             }
             catch (OperationCanceledException)

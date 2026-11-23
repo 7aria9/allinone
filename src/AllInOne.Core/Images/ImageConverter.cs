@@ -94,6 +94,7 @@ public static class ImageConverter
         ImageFormatKind.Gif => MagickFormat.Gif,
         ImageFormatKind.Tiff => MagickFormat.Tiff,
         ImageFormatKind.Webp => MagickFormat.WebP,
+        ImageFormatKind.Avif => MagickFormat.Avif,
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 }

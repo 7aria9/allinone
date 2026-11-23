@@ -9,6 +9,8 @@ public enum ImageFormatKind
     Gif,
     Tiff,
     Webp,
+    /// <summary>AVIF : très compact, lu par les navigateurs et systèmes récents.</summary>
+    Avif,
 }
 
 public static class ImageFormats
@@ -30,12 +32,13 @@ public static class ImageFormats
         ImageFormatKind.Gif => ".gif",
         ImageFormatKind.Tiff => ".tif",
         ImageFormatKind.Webp => ".webp",
+        ImageFormatKind.Avif => ".avif",
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
     /// <summary>Indique si le format accepte un réglage de qualité (compression avec perte).</summary>
     public static bool SupportsQuality(this ImageFormatKind format) =>
-        format is ImageFormatKind.Jpeg or ImageFormatKind.Webp;
+        format is ImageFormatKind.Jpeg or ImageFormatKind.Webp or ImageFormatKind.Avif;
 
     public static ImageFormatKind Parse(string value)
     {
@@ -48,6 +51,7 @@ public static class ImageFormats
             "gif" => ImageFormatKind.Gif,
             "tif" or "tiff" => ImageFormatKind.Tiff,
             "webp" => ImageFormatKind.Webp,
+            "avif" => ImageFormatKind.Avif,
             _ => throw new ArgumentException($"Format d'image inconnu : {value}"),
         };
     }
