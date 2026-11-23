@@ -22,7 +22,16 @@ public partial class MainWindow : Window
         LanguageBox.SelectedIndex = L.Languages.ToList().FindIndex(l => l.Code == L.Language);
         LanguageBox.SelectionChanged += Language_Changed;
         Translator.Apply(this);
+        VersionText.Text = "v" + AppVersion;
+        // « LocalConvert v1.0.N : PDF, images… » (la version juste après le nom, dans toutes les langues)
+        Title = Title is { } t && t.StartsWith("LocalConvert", StringComparison.Ordinal)
+            ? t.Insert("LocalConvert".Length, " v" + AppVersion)
+            : $"LocalConvert v{AppVersion}";
     }
+
+    /// <summary>Version de l'application (1.0.N), fixée par la publication (-p:Version=...).</summary>
+    internal static string AppVersion { get; } =
+        typeof(MainWindow).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
 
     /// <summary>Change de langue : la fenêtre est reconstruite dans la nouvelle langue, au même endroit.</summary>
     private void Language_Changed(object? sender, SelectionChangedEventArgs e)
