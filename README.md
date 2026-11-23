@@ -18,7 +18,7 @@ Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-m�
 | --- | --- |
 | `src/AllInOne.Core` | Bibliothèque multiplateforme qui contient toute la logique (utilisable depuis n'importe quel programme .NET). |
 | `src/AllInOne.App` | Application de bureau WPF (Windows) avec quatre onglets. |
-| `src/AllInOne.Cli` | Outil en ligne de commande `allinone` (Windows, Linux, macOS). |
+| `src/AllInOne.Cli` | Outil en ligne de commande `allinone-cli` (Windows, Linux, macOS). |
 | `tests/AllInOne.Core.Tests` | Tests automatisés (xUnit). |
 
 ## Utiliser l'application de bureau
@@ -41,7 +41,7 @@ embarquer .NET (dossier environ 4 fois plus lourd, mais rien à installer).
 
 **Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
 [release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux archives, contenant chacune
-`AllInOne.exe`, `allinone.exe` (ligne de commande) et leurs DLL :
+`AllInOne.exe`, `allinone-cli.exe` (ligne de commande) et leurs DLL :
 
 | Archive | Taille (zip / décompressé) | Prérequis |
 | --- | --- | --- |
@@ -82,21 +82,21 @@ dotnet run --project src/AllInOne.Cli -- --help
 Exemples (les pages sont numérotées à partir de 1) :
 
 ```bash
-allinone images2pdf album.pdf photo1.jpg photo2.png --size A4 --margin 10
-allinone merge tout.pdf partie1.pdf partie2.pdf annexe.png
-allinone delete rapport.pdf 2,5-7 -o rapport_court.pdf
-allinone reorder rapport.pdf 3,1,2 -o rapport_reordonne.pdf
-allinone move rapport.pdf 5 1 -o rapport.pdf
-allinone insert rapport.pdf 3 couverture.pdf schema.png -o rapport_complet.pdf
-allinone rotate scan.pdf 1-2 90 -o scan_droit.pdf
-allinone extract rapport.pdf 4-6 -o extrait.pdf
-allinone split rapport.pdf pages/
-allinone pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
-allinone convert sortie/ *.png --format webp --quality 85 --max-width 1920
-allinone video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
-allinone video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
-allinone audio sortie/ morceau.wav concert.aiff --format mp3 --quality haute
-allinone audio sortie/ film.mp4 --format flac                # extrait le son d'une vidéo
+allinone-cli images2pdf album.pdf photo1.jpg photo2.png --size A4 --margin 10
+allinone-cli merge tout.pdf partie1.pdf partie2.pdf annexe.png
+allinone-cli delete rapport.pdf 2,5-7 -o rapport_court.pdf
+allinone-cli reorder rapport.pdf 3,1,2 -o rapport_reordonne.pdf
+allinone-cli move rapport.pdf 5 1 -o rapport.pdf
+allinone-cli insert rapport.pdf 3 couverture.pdf schema.png -o rapport_complet.pdf
+allinone-cli rotate scan.pdf 1-2 90 -o scan_droit.pdf
+allinone-cli extract rapport.pdf 4-6 -o extrait.pdf
+allinone-cli split rapport.pdf pages/
+allinone-cli pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
+allinone-cli convert sortie/ *.png --format webp --quality 85 --max-width 1920
+allinone-cli video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
+allinone-cli video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
+allinone-cli audio sortie/ morceau.wav concert.aiff --format mp3 --quality haute
+allinone-cli audio sortie/ film.mp4 --format flac                # extrait le son d'une vidéo
 ```
 
 ## Bibliothèques utilisées et licences
