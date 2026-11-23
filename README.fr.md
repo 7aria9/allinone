@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon/localconvert-128.png" width="96" alt="Icône de LocalConvert"></p>
+
 # LocalConvert : convertisseur de fichiers hors ligne (C# / .NET 8)
 
 *[English version](README.md)*

@@ -10,6 +10,8 @@
     <!-- Liaisons par réflexion dans les modèles XAML (plus simple que les liaisons compilées pour ces petites listes). -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Icône de l'exécutable Windows (source : assets/icon/localconvert.svg). -->
+    <ApplicationIcon>..\..\assets\icon\localconvert.ico</ApplicationIcon>
     <!-- Avalonia annote plus de propriétés comme « nullables » que WPF (Text, Tag…) : avertissements sans conséquence ici. -->
     <NoWarn>$(NoWarn);CA1416;CS8600;CS8602;CS8604</NoWarn>
     <!-- Les DLL restent à côté de l'exécutable (pas d'exe unique de 200 Mo). -->
@@ -28,6 +30,12 @@
     <PackageReference Include="SkiaSharp" Version="3.119.2" />
     <!-- Avalonia tire encore les bibliothèques natives Linux 2.88 : on impose celles de SkiaSharp 3. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Icône de la fenêtre et de l'en-tête. -->
+    <AvaloniaResource Include="..\..\assets\icon\localconvert.ico" Link="Assets\localconvert.ico" />
+    <AvaloniaResource Include="..\..\assets\icon\localconvert-128.png" Link="Assets\localconvert-128.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -71,6 +71,9 @@ jobs:
           dotnet publish src/AllInOne.Cli -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
           dotnet publish src/AllInOne.App -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
           ./.github/scripts/smoke-test.sh $out
+          # Icône et ajout au menu des applications
+          cp assets/icon/localconvert-256.png $out/localconvert.png
+          cp assets/linux/install-desktop-entry.sh $out/
           mkdir -p release
           tar -czf release/LocalConvert-$VERSION-linux-x64.tar.gz -C publish LocalConvert-$VERSION-linux-x64
           ls -l release
@@ -132,7 +135,7 @@ jobs:
 
           **Windows** : décompressez l'archive puis lancez \`LocalConvert.exe\` (\`localconvert-cli.exe\` pour la ligne de commande).
 
-          **Linux** : \`tar -xzf LocalConvert-$VERSION-linux-x64.tar.gz\` puis lancez \`./LocalConvert\` dans le dossier créé (\`./localconvert-cli\` pour la ligne de commande).
+          **Linux** : \`tar -xzf LocalConvert-$VERSION-linux-x64.tar.gz\` puis lancez \`./LocalConvert\` dans le dossier créé (\`./localconvert-cli\` pour la ligne de commande). \`./install-desktop-entry.sh\` l'ajoute au menu des applications, avec son icône.
 
           **macOS** : décompressez le zip (double-clic) et glissez **LocalConvert.app** dans le dossier Applications.
           L'application n'est pas signée par Apple (cela demande un compte développeur payant). À la première ouverture, macOS affiche

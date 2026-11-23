@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon/localconvert-128.png" width="96" alt="LocalConvert icon"></p>
+
 # LocalConvert: offline PDF, image, video and audio converter
 
 *[Version française](README.fr.md)*
@@ -54,6 +56,7 @@ Get the latest version from the [Releases page](../../releases/latest).
   and choose **Open** instead. From Terminal, you can also run
   `xattr -dr com.apple.quarantine /Applications/LocalConvert.app`.
 - **Linux:** run `tar -xzf LocalConvert-<version>-linux-x64.tar.gz`, then run `./LocalConvert` in the extracted folder.
+  `./install-desktop-entry.sh` adds it to your applications menu, with its icon.
 
 ### FFmpeg (video and audio)
 
@@ -145,3 +148,5 @@ PDFtoImage stays on **5.2.1** because it uses SkiaSharp 3, like Avalonia 11.
 - Password-protected PDFs cannot be edited.
 - The macOS app is not signed by Apple (see [Download](#download) to open it).
 - FFmpeg is downloaded automatically only on Windows.
+
+The app icon's source is [`assets/icon/localconvert.svg`](assets/icon/localconvert.svg). The `.ico` (Windows), `.icns` (macOS) and PNG (Linux) files are exported from it.
