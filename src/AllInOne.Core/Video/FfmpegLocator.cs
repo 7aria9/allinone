@@ -15,6 +15,19 @@ public static class FfmpegLocator
     /// <summary>Chemin forcé (variable d'environnement ALLINONE_FFMPEG), utile pour les tests ou une installation personnalisée.</summary>
     public const string EnvironmentVariable = "ALLINONE_FFMPEG";
 
+    /// <summary>
+    /// ffprobe livré avec FFmpeg : cherché à côté de <paramref name="ffmpegPath"/>, puis dans le PATH.
+    /// Null s'il est absent (on se rabat alors sur « ffmpeg -i »).
+    /// </summary>
+    public static string? FindProbe(string? ffmpegPath = null)
+    {
+        var name = OperatingSystem.IsWindows() ? "ffprobe.exe" : "ffprobe";
+        ffmpegPath ??= Find();
+        var dir = ffmpegPath is null ? null : Path.GetDirectoryName(ffmpegPath);
+        if (!string.IsNullOrEmpty(dir) && File.Exists(Path.Combine(dir, name))) return Path.Combine(dir, name);
+        return SearchPath(name);
+    }
+
     public static string? Find()
     {
         var forced = Environment.GetEnvironmentVariable(EnvironmentVariable);
@@ -26,12 +39,17 @@ public static class FfmpegLocator
             if (File.Exists(candidate)) return candidate;
         }
 
+        return SearchPath(ExecutableName);
+    }
+
+    private static string? SearchPath(string name)
+    {
         var path = Environment.GetEnvironmentVariable("PATH") ?? "";
         foreach (var dir in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             try
             {
-                var candidate = Path.Combine(dir.Trim('"'), ExecutableName);
+                var candidate = Path.Combine(dir.Trim('"'), name);
                 if (File.Exists(candidate)) return candidate;
             }
             catch (ArgumentException)

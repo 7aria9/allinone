@@ -6,13 +6,13 @@ using AllInOne.Core.Video;
 
 namespace AllInOne.App.Views;
 
-public partial class ConvertAudioView : UserControl
+public partial class ConvertAudioView : UserControl, IMediaListView
 {
     private static readonly string AudioFilter =
         "Sons et vidéos|" + string.Join(";", AudioFormats.InputExtensions.Concat(VideoFormats.InputExtensions).Select(e => "*" + e)) +
         "|Sons|" + string.Join(";", AudioFormats.InputExtensions.Select(e => "*" + e)) + "|Tous les fichiers|*.*";
 
-    private readonly ObservableCollection<FileItem> _items = new();
+    private readonly ObservableCollection<MediaItem> _items = new();
 
     public ConvertAudioView()
     {
@@ -21,16 +21,27 @@ public partial class ConvertAudioView : UserControl
         _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
         IsVisibleChanged += (_, _) => { if (IsVisible) RefreshFfmpegStatus(); };
+        Loaded += (_, _) => RefreshFfmpegStatus();
     }
 
-    private void RefreshFfmpegStatus() => FfmpegSetup.RefreshStatus(FfmpegStatus, DownloadButton);
+    void IMediaListView.AddSmokeTestSamples()
+    {
+        foreach (var item in MediaItems.SmokeTestSamples(isVideo: false)) _items.Add(item);
+    }
+
+    private void RefreshFfmpegStatus()
+    {
+        FfmpegSetup.RefreshStatus(FfmpegStatus, DownloadButton);
+        MediaItems.LoadInfo(_items); // par exemple juste après l'installation de FFmpeg
+    }
 
     private void AddFiles(string[] paths, int index)
     {
-        var added = paths.Where(AudioFormats.IsSupportedInput).Select(p => new FileItem(p)).ToList();
+        var added = paths.Where(AudioFormats.IsSupportedInput).Select(p => new MediaItem(p, isVideo: false)).ToList();
         var skipped = paths.Length - added.Count;
         index = Math.Clamp(index, 0, _items.Count);
         for (var i = 0; i < added.Count; i++) _items.Insert(index + i, added[i]);
+        MediaItems.LoadInfo(added);
         if (string.IsNullOrWhiteSpace(OutputDir.Text) && added.Count > 0)
             OutputDir.Text = Path.Combine(added[0].Folder, "converties");
         if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format non reconnu.");
@@ -86,13 +97,25 @@ public partial class ConvertAudioView : UserControl
             SampleRate = TagNumber(SampleRate),
             Channels = TagNumber(Channels),
         };
-        var paths = _items.Select(i => i.Path).ToList();
+        var items = _items.ToList();
         var window = MainWindow.Of(this);
-        var status = new Progress<string>(window.SetStatus);
-        var count = 0;
-        var ok = await window.RunBusyAsync($"Conversion de {paths.Count} fichier(s)…",
-            async (p, ct) => count = (await Task.Run(() => AudioConverter.ConvertManyAsync(paths, outputDir, format, options, p, ct, status), ct)).Count,
+        MediaItems.Result? result = null;
+        var ok = await window.RunBusyAsync($"Conversion de {items.Count} fichier(s)…",
+            async (p, ct) => result = await MediaItems.ConvertAsync(items, outputDir, format.Extension(),
+                (input, output, progress, token) => AudioConverter.ConvertAsync(input, output, format, options, progress, token),
+                p, window.SetStatus, Files.ScrollIntoView, ct),
             $"Sons convertis dans {outputDir}", cancellable: true);
-        if (ok) window.OfferToOpen(outputDir, $"{count} fichier(s) converti(s) dans {outputDir}.");
+        if (!ok || result is null) return;
+        var count = result.Written.Count;
+        if (result.Failures.Count > 0)
+        {
+            window.SetStatus($"{count} fichier(s) converti(s), {result.Failures.Count} en échec.");
+            var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
+            if (result.Failures.Count > 5) details += $"\n\n… et {result.Failures.Count - 5} autre(s).";
+            Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (count == 0) return;
+        }
+        window.OfferToOpen(outputDir, $"{count} fichier(s) converti(s) dans {outputDir}.");
     }
 }

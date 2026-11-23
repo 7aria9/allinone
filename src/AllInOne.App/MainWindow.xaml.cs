@@ -17,6 +17,21 @@ public partial class MainWindow : Window
             Pages.Children[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    /// <summary>
+    /// Test de démarrage : affiche chaque page (avec des lignes d'exemple dans chaque état pour les sons et vidéos)
+    /// afin que leurs modèles XAML soient réellement construits. Une erreur remonte au gestionnaire global.
+    /// </summary>
+    internal void RenderEveryPageForSmokeTest()
+    {
+        for (var i = 0; i < Pages.Children.Count; i++)
+        {
+            if (Pages.Children[i] is Views.IMediaListView media) media.AddSmokeTestSamples();
+            for (var j = 0; j < Pages.Children.Count; j++)
+                Pages.Children[j].Visibility = i == j ? Visibility.Visible : Visibility.Collapsed;
+            UpdateLayout();
+        }
+    }
+
     private CancellationTokenSource? _cancel;
 
     /// <summary>

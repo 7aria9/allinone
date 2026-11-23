@@ -20,4 +20,52 @@
             </StackPanel>
         </Grid>
     </DataTemplate>
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+    <!-- Ligne d'un son ou d'une vidéo : caractéristiques du fichier, puis avancement et temps restant pendant la conversion. -->
+    <DataTemplate x:Key="MediaItemTemplate">
+        <Grid ToolTip="{Binding Path}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="56" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Width="52" Height="52" CornerRadius="8" Background="{StaticResource CoverPlaceholder}" VerticalAlignment="Top">
+                <TextBlock Text="{Binding Icon}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Info}" Foreground="{StaticResource TextDim}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                <Grid Margin="0,6,0,0" Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar Style="{StaticResource ThinBar}" Value="{Binding Progress, Mode=OneWay}" VerticalAlignment="Center"
+                                 Visibility="{Binding ShowBar, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock x:Name="Status" Grid.Column="1" Text="{Binding StatusText}" FontSize="12" Margin="10,0,0,0"
+                               Foreground="{StaticResource TextDim}" ToolTip="{Binding Error}" />
+                </Grid>
+            </StackPanel>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="Running">
+                <Setter TargetName="Status" Property="Foreground" Value="{StaticResource Text}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Done">
+                <Setter TargetName="Status" Property="Foreground" Value="{StaticResource Success}" />
+                <Setter TargetName="Status" Property="Grid.Column" Value="0" />
+                <Setter TargetName="Status" Property="Margin" Value="0" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Failed">
+                <Setter TargetName="Status" Property="Foreground" Value="#F87171" />
+                <Setter TargetName="Status" Property="TextTrimming" Value="CharacterEllipsis" />
+                <Setter TargetName="Status" Property="Grid.Column" Value="0" />
+                <Setter TargetName="Status" Property="Margin" Value="0" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Cancelled">
+                <Setter TargetName="Status" Property="Grid.Column" Value="0" />
+                <Setter TargetName="Status" Property="Margin" Value="0" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
 </ResourceDictionary>

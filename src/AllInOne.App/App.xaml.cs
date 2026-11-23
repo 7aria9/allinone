@@ -37,7 +37,12 @@ public partial class App : Application
         {
             var window = new MainWindow();
             MainWindow = window;
-            if (_smokeTest) window.ContentRendered += (_, _) => Dispatcher.BeginInvoke(() => Shutdown(0), DispatcherPriority.ApplicationIdle);
+            if (_smokeTest)
+                window.ContentRendered += (_, _) =>
+                {
+                    window.RenderEveryPageForSmokeTest();
+                    Dispatcher.BeginInvoke(() => Shutdown(0), DispatcherPriority.ApplicationIdle);
+                };
             window.Show();
         }
         catch (Exception ex)
