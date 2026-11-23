@@ -19,7 +19,7 @@ The app is available in **English, French, German and Spanish**.
 - **Compress PDFs**: shrink scanned or photo-heavy PDFs by downsampling their images. Text stays sharp and selectable.
 - **Split PDFs**: one page per file, every N pages, or by ranges such as `1-3, 4-7, 8-`.
 - **PDF → images**: PNG, JPEG, WebP, BMP, GIF or TIFF, at the resolution you choose.
-- **PDF → Word, ODT or text**: get the text of a PDF back as an editable Word (.docx), OpenDocument (.odt) or plain text (.txt) file. Paragraphs, headings and bold text are kept, one PDF page per page. Images, tables and the exact layout are not, and scanned PDFs have no text to extract (no OCR).
+- **PDF → Word, ODT or text**: get the text of a PDF back as an editable Word (.docx), OpenDocument (.odt) or plain text (.txt) file. Paragraphs, headings and bold text are kept, one PDF page per page. **Scanned pages, photos of documents and images containing text are read by OCR**, offline (French, English, German, Spanish and other Latin-alphabet languages). The images themselves, tables and the exact layout are not kept.
 
 **Images**
 - **Convert images** between PNG, JPEG, WebP, AVIF, BMP, GIF and TIFF, with optional resizing.
@@ -91,6 +91,7 @@ localconvert-cli split report.pdf parts/ --ranges "1-3, 4-7, 8-"
 localconvert-cli compress scan.pdf scan_small.pdf --level strong
 localconvert-cli pdf2img report.pdf images/ --format png --dpi 200 --pages 1-3
 localconvert-cli pdf2doc out/ report.pdf contract.pdf --format docx   # or odt, txt
+localconvert-cli pdf2doc out/ scan.pdf receipt.jpg --format txt        # read by OCR (--no-ocr to skip)
 localconvert-cli convert out/ *.png --format webp --quality 85 --max-width 1920
 localconvert-cli video out/ movie.avi clip.mov --format mp4 --quality high --max-height 1080
 localconvert-cli video out/ movie.mp4 --format gif --start 0:12 --end 0:18 --quality low
@@ -141,6 +142,8 @@ LocalConvert is released under the [MIT licence](LICENSE).
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphics for Avalonia and PDFtoImage | MIT |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Reading and converting images | Apache 2.0 |
 | [PdfPig](https://github.com/UglyToad/PdfPig) | Reading the text of PDFs (PDF → Word, ODT, text) | Apache 2.0 |
+| [RapidOcrNet](https://github.com/BobLd/RapidOcrNet) with [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) PP-OCRv5 Latin models | Text recognition (OCR) of scans and images | Apache 2.0 |
+| [ONNX Runtime](https://github.com/microsoft/onnxruntime) | Runs the OCR models | MIT |
 | [FFmpeg](https://ffmpeg.org/) (downloaded separately, not bundled) | Video and audio conversion | GPL (separate program) |
 
 PDFsharp is pinned to **6.2.4** on purpose: version 6.5 and later are AGPL-3.0, with a licence check at startup.

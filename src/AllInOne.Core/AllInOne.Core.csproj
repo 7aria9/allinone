@@ -15,11 +15,21 @@
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
     <!-- PdfPig (Apache 2.0) : extraction du texte des PDF (PDF → Word, ODT, texte). -->
     <PackageReference Include="PdfPig" Version="0.1.16" />
+    <!-- RapidOcrNet (Apache 2.0) : reconnaissance de texte (OCR) des pages scannées, avec ONNX Runtime (MIT)
+         et les modèles PaddleOCR PP-OCRv5 « latin » (Apache 2.0 : français, anglais, allemand, espagnol…). -->
+    <PackageReference Include="RapidOcrNet" Version="4.2.0" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Traductions : le texte français sert de clé (voir Localization/L.cs). -->
     <EmbeddedResource Include="Localization\*.json" LogicalName="AllInOne.Core.Localization.%(Filename).json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Les modèles OCR (≈ 14 Mo) sont copiés à côté de chaque programme qui utilise la bibliothèque
+         (application, ligne de commande, tests) : la cible du paquet ne les copie que pour ce projet-ci. -->
+    <None Include="$(PkgRapidOcrNet)/models/v5/*" Link="models/v5/%(Filename)%(Extension)" Visible="false"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

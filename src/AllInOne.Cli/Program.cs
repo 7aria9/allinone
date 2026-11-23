@@ -28,7 +28,8 @@ public static class Program
           split      <entrée.pdf> <dossier> [--every N | --ranges "1-3,4-7,8-"]   (par défaut : une page par fichier)
           compress   <entrée.pdf> <sortie.pdf> [--level legere|moyenne|forte]
           pdf2img    <entrée.pdf> <dossier> [--format png|jpg|bmp|gif|tiff|webp] [--dpi 150] [--pages 1-3] [--quality 90]
-          pdf2doc    <dossier> <fichier.pdf...> [--format docx|odt|txt]   texte et paragraphes (pas d'OCR pour les scans)
+          pdf2doc    <dossier> <fichier.pdf|image...> [--format docx|odt|txt] [--no-ocr]
+                     texte et paragraphes ; les scans et les images sont lus par OCR
           convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp|avif [--quality 90] [--max-width px] [--max-height px]
           video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov|gif [--quality haute|moyenne|faible]
                      [--max-height 720] [--no-audio] [--copy] [--start 1:30] [--end 2:45]   (nécessite FFmpeg dans le PATH)
@@ -185,18 +186,26 @@ public static class Program
             }
             case "pdf2doc":
             {
-                a.Require(2, L.T("pdf2doc <dossier> <fichier.pdf...>"));
+                a.Require(2, L.T("pdf2doc <dossier> <fichier.pdf|image...>"));
                 var format = TextDocumentFormats.Parse(a.Get("format") ?? "docx");
+                var ocr = !a.Flag("no-ocr");
+                if (ocr && TextRecognizer.UnavailableReason is { } why)
+                {
+                    Console.Error.WriteLine(why);
+                    ocr = false;
+                }
                 var written = 0;
                 foreach (var input in a.Positional.Skip(1))
                 {
                     var output = FileNames.Unique(Path.Combine(a.Positional[0],
                         Path.GetFileNameWithoutExtension(input) + TextDocumentFormats.Extension(format)));
                     Directory.CreateDirectory(a.Positional[0]);
-                    var r = PdfToDocument.Convert(input, output, format);
+                    var r = PdfToDocument.Convert(input, output, format, new TextExtractionOptions { Ocr = ocr });
                     Console.WriteLine(L.T("{0} : {1} page(s), {2} paragraphe(s) → {3}", Path.GetFileName(input), r.Pages, r.Paragraphs, output));
+                    if (r.PagesReadByOcr + r.ImagesReadByOcr > 0)
+                        Console.WriteLine(L.T("  OCR : {0} page(s) scannée(s) et {1} image(s) lue(s).", r.PagesReadByOcr, r.ImagesReadByOcr));
                     if (r.PagesWithoutText > 0)
-                        Console.WriteLine(L.T("  Attention : {0} page(s) sans texte (images ou pages scannées), laissée(s) vide(s).", r.PagesWithoutText));
+                        Console.WriteLine(L.T("  Attention : {0} page(s) sans texte reconnu, laissée(s) vide(s).", r.PagesWithoutText));
                     written++;
                 }
                 Console.WriteLine(L.T("{0} document(s) créé(s) dans {1}", written, a.Positional[0]));
@@ -327,7 +336,7 @@ public static class Program
 /// <summary>Arguments : valeurs positionnelles, options « --nom valeur » / « -o valeur » et drapeaux « --nom ».</summary>
 internal sealed class Args
 {
-    private static readonly HashSet<string> Flags = new() { "no-enlarge", "no-audio", "copy" };
+    private static readonly HashSet<string> Flags = new() { "no-enlarge", "no-audio", "copy", "no-ocr" };
     private readonly Dictionary<string, string?> _options = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Positional { get; } = new();
 

@@ -12,6 +12,8 @@
   <Target Name="AllInOneRemoveNativePdbsFromPublish" AfterTargets="Publish">
     <ItemGroup>
       <_AllInOneNativePdbPublished Include="$(PublishDir)**\libSkiaSharp.pdb" />
+      <!-- Bibliothèques d'édition de liens d'ONNX Runtime (.lib) : inutiles à l'exécution. -->
+      <_AllInOneNativePdbPublished Include="$(PublishDir)onnxruntime*.lib" />
     </ItemGroup>
     <Delete Files="@(_AllInOneNativePdbPublished)" />
   </Target>
