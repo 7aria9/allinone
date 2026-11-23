@@ -84,6 +84,8 @@ jobs:
 
   macos:
     runs-on: macos-latest
+    # Les machines macOS de GitHub sont parfois indisponibles : la release ne les attend pas indéfiniment.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -109,6 +111,8 @@ jobs:
 
   release:
     needs: [windows, linux, macos]
+    # Windows et Linux suffisent : si la machine macOS n'a pas pu tourner, la release sort sans les fichiers Mac.
+    if: ${{ always() && needs.windows.result == 'success' && needs.linux.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -122,16 +126,25 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           ls -l release
+          if ls release/*macos* >/dev/null 2>&1; then
+            MAC_ROWS="| Mac Apple Silicon (M1, M2, M3, M4…) | \`LocalConvert-$VERSION-macos-apple-silicon.zip\` |
+          | Mac Intel | \`LocalConvert-$VERSION-macos-intel.zip\` |"
+            MAC_NOTE=""
+          else
+            MAC_ROWS=""
+            MAC_NOTE="> Les fichiers Mac n'ont pas pu être compilés pour cette version (machine macOS de GitHub indisponible). Utilisez la version précédente sur Mac."
+          fi
           cat > notes.md <<NOTES
+          $MAC_NOTE
+
           ## Téléchargement
 
           | Système | Fichier |
           | --- | --- |
           | Windows (léger) | \`LocalConvert-$VERSION-win-x64.zip\` : nécessite le [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
           | Windows (autonome) | \`LocalConvert-$VERSION-win-x64-autonome.zip\` : plus lourd, rien à installer |
-          | Mac Apple Silicon (M1, M2, M3, M4…) | \`LocalConvert-$VERSION-macos-apple-silicon.zip\` |
-          | Mac Intel | \`LocalConvert-$VERSION-macos-intel.zip\` |
           | Linux x64 | \`LocalConvert-$VERSION-linux-x64.tar.gz\` |
+          $MAC_ROWS
 
           **Windows** : décompressez l'archive puis lancez \`LocalConvert.exe\` (\`localconvert-cli.exe\` pour la ligne de commande).
 
