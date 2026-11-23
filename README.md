@@ -6,7 +6,8 @@ Application de bureau Windows (WPF) et outil en ligne de commande pour :
 - **modifier un PDF** : supprimer des pages, en ajouter (depuis d'autres PDF ou des images), les réorganiser, les faire pivoter ;
 - **fusionner plusieurs PDF** (et images) en un seul document ;
 - **convertir un PDF en images** (PNG, JPEG, WebP, BMP, GIF, TIFF, résolution au choix) ;
-- **convertir des images d'un format à un autre** (PNG, JPEG, WebP, BMP, GIF, TIFF), avec redimensionnement optionnel.
+- **convertir des images d'un format à un autre** (PNG, JPEG, WebP, BMP, GIF, TIFF), avec redimensionnement optionnel ;
+- **convertir des vidéos** en MP4, MKV, WebM, AVI, OGG ou MOV (qualité, résolution maximale, suppression du son, changement de conteneur sans réencodage).
 
 Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
 
@@ -46,6 +47,21 @@ L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, 
 2. **Modifier / fusionner des PDF** : ouvrez un ou plusieurs PDF et/ou images ; toutes les pages s'affichent en vignettes. Sélectionnez-les pour les supprimer (touche Suppr), les pivoter, les déplacer ou glissez-les à la souris. Les fichiers ajoutés sont insérés après la page sélectionnée. « Enregistrer sous » produit le PDF final.
 3. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
 4. **Convertir des images** : convertissez un lot d'images vers un autre format, avec largeur/hauteur maximales optionnelles.
+5. **Convertir des vidéos** : ajoutez ou glissez des vidéos, choisissez le format, la qualité et la résolution maximale. Un bouton « Arrêter » interrompt la conversion.
+
+### FFmpeg (conversion vidéo)
+
+La conversion vidéo utilise [FFmpeg](https://ffmpeg.org/), lancé comme programme séparé. Il n'est **pas inclus** dans l'exe (il pèserait environ 200 Mo de plus) :
+à la première conversion, l'application propose de le télécharger (build GPL de [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds))
+dans `%LOCALAPPDATA%\AllInOne\ffmpeg`. Si FFmpeg est déjà installé (à côté de l'exe ou dans le `PATH`), il est utilisé directement.
+La variable d'environnement `ALLINONE_FFMPEG` permet d'indiquer un chemin précis.
+
+| Format | Vidéo | Audio |
+| --- | --- | --- |
+| MP4, MKV, MOV | H.264 (libx264) | AAC |
+| WebM | VP9 | Opus |
+| AVI | MPEG-4 Part 2 (Xvid) | MP3 |
+| OGG | Theora | Vorbis |
 
 ## Utiliser la ligne de commande
 
@@ -67,6 +83,8 @@ allinone extract rapport.pdf 4-6 -o extrait.pdf
 allinone split rapport.pdf pages/
 allinone pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
 allinone convert sortie/ *.png --format webp --quality 85 --max-width 1920
+allinone video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
+allinone video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
 ```
 
 ## Bibliothèques utilisées et licences
@@ -80,9 +98,13 @@ Toutes les dépendances sont sous licence permissive, compatibles avec un usage 
 | [PDFium](https://pdfium.googlesource.com/pdfium/) (binaires bblanchon) | Moteur de rendu PDF utilisé par PDFtoImage | BSD-3 / Apache 2.0 |
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par PDFtoImage | MIT |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Lecture et conversion des images | Apache 2.0 |
+| [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo | GPL (programme séparé) |
 
 > **Attention :** PDFsharp est volontairement figé en version **6.2.4**. Les versions 6.5 et suivantes sont passées
 > sous licence AGPL-3.0 avec une vérification de licence au démarrage. Ne mettez pas à jour ce paquet sans vérifier sa licence.
+
+FFmpeg est un programme indépendant, exécuté comme processus externe et téléchargé par l'utilisateur : il n'est ni lié ni
+redistribué avec AllInOne, dont la licence n'est donc pas affectée par la GPL de FFmpeg.
 
 ImageSharp n'a pas été retenu car sa licence actuelle (Six Labors Split License) n'est pas totalement libre pour un usage commercial.
 
