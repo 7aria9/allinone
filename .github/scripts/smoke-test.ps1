@@ -16,6 +16,11 @@ foreach ($folder in $Folders) {
     }
     if ($p.ExitCode -eq 0) {
         Write-Host "OK : la fenêtre principale s'est affichée."
+        $cli = Join-Path $folder 'allinone.exe'
+        if (Test-Path $cli) {
+            & $cli --help | Select-Object -First 1
+            if ($LASTEXITCODE -ne 0) { Write-Host "::error::$cli --help a échoué (code $LASTEXITCODE)"; $failed = $true }
+        }
         continue
     }
     $failed = $true

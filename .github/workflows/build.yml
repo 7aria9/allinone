@@ -31,9 +31,12 @@ jobs:
         shell: pwsh
         run: |
           foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
-            dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            # D'abord la ligne de commande, puis l'application : les deux partagent le dossier, et en version autonome
+            # l'application doit garder SES WindowsBase.dll / System.Drawing.dll (WPF). Dans l'autre ordre, la CLI les
+            # remplaçait par des versions sans WPF et AllInOne.exe se fermait au lancement sans rien afficher (v1.0.4).
             dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
       - name: Test de démarrage de l'application

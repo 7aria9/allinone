@@ -38,9 +38,12 @@ jobs:
           $common = @('-c', 'Release', '-r', 'win-x64', '-p:DebugType=none', "-p:Version=$env:VERSION")
           foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
             $out = "publish/$($mode.Name)"
-            dotnet publish src/AllInOne.App @common --self-contained $($mode.SelfContained) -o $out
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            # D'abord la ligne de commande, puis l'application : les deux partagent le dossier, et en version autonome
+            # l'application doit garder SES WindowsBase.dll / System.Drawing.dll (WPF). Dans l'autre ordre, la CLI les
+            # remplaçait par des versions sans WPF et AllInOne.exe se fermait au lancement sans rien afficher (v1.0.4).
             dotnet publish src/AllInOne.Cli @common --self-contained $($mode.SelfContained) -o $out
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            dotnet publish src/AllInOne.App @common --self-contained $($mode.SelfContained) -o $out
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
           ./.github/scripts/smoke-test.ps1 -Folders publish/leger, publish/autonome
