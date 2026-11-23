@@ -42,10 +42,19 @@ public static class FfmpegLocator
         return SearchPath(ExecutableName);
     }
 
+    /// <summary>
+    /// Dossiers d'installation habituels sur macOS et Linux (Homebrew, MacPorts, paquets, Snap) : une application lancée
+    /// depuis le Finder ou un menu ne reçoit pas le PATH du terminal.
+    /// </summary>
+    private static readonly string[] UnixDirectories =
+        { "/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin", "/snap/bin", "/var/lib/flatpak/exports/bin" };
+
     private static string? SearchPath(string name)
     {
         var path = Environment.GetEnvironmentVariable("PATH") ?? "";
-        foreach (var dir in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        var dirs = path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).AsEnumerable();
+        if (!OperatingSystem.IsWindows()) dirs = dirs.Concat(UnixDirectories);
+        foreach (var dir in dirs)
         {
             try
             {

@@ -1,9 +1,11 @@
 name: release
 
 # Publie une release GitHub à chaque fusion dans main (une pull request validée = un push sur main).
-# Deux archives zip, avec AllInOne.exe, allinone-cli.exe (ligne de commande) et leurs DLL côte à côte :
-#  - AllInOne-<version>-win-x64.zip           : légère, nécessite le runtime « .NET 8 Desktop Runtime » ;
-#  - AllInOne-<version>-win-x64-autonome.zip  : plus lourde, inclut .NET (rien à installer).
+# Archives (application AllInOne + ligne de commande allinone-cli, avec leurs bibliothèques côte à côte) :
+#  - AllInOne-<version>-win-x64.zip            : Windows, légère, nécessite le runtime « .NET 8 » ;
+#  - AllInOne-<version>-win-x64-autonome.zip   : Windows, inclut .NET (rien à installer) ;
+#  - AllInOne-<version>-macos-apple-silicon.zip / -macos-intel.zip : AllInOne.app (inclut .NET) ;
+#  - AllInOne-<version>-linux-x64.tar.gz       : Linux, inclut .NET.
 on:
   push:
     branches: [main]
@@ -16,30 +18,26 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  # Numéro de version auto-incrémenté : 1.0.<numéro d'exécution du workflow>.
+  VERSION: 1.0.${{ github.run_number }}
+
 jobs:
-  release:
+  windows:
     runs-on: windows-latest
-    env:
-      # Numéro de version auto-incrémenté : 1.0.<numéro d'exécution du workflow>.
-      VERSION: 1.0.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-
       - name: Tests
         run: dotnet test tests/AllInOne.Core.Tests -c Release
-
       - name: Publication
         shell: pwsh
         run: |
           $common = @('-c', 'Release', '-r', 'win-x64', '-p:DebugType=none', "-p:Version=$env:VERSION")
           foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
             $out = "publish/$($mode.Name)"
-            # D'abord la ligne de commande, puis l'application : en version autonome les deux partagent les DLL du runtime,
-            # et l'application doit garder ses versions WPF de WindowsBase.dll / System.Drawing.dll.
             dotnet publish src/AllInOne.Cli @common --self-contained $($mode.SelfContained) -o $out
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             dotnet publish src/AllInOne.App @common --self-contained $($mode.SelfContained) -o $out
@@ -51,18 +49,104 @@ jobs:
           Compress-Archive -Path publish/leger/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64.zip"
           Compress-Archive -Path publish/autonome/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64-autonome.zip"
           Get-ChildItem release | Format-Table Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: release/
 
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Installation de FFmpeg (tests vidéo) et Xvfb (écran virtuel)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb
+      - name: Tests
+        run: dotnet test tests/AllInOne.Core.Tests -c Release
+      - name: Publication
+        run: |
+          out=publish/AllInOne-$VERSION-linux-x64
+          dotnet publish src/AllInOne.Cli -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
+          dotnet publish src/AllInOne.App -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
+          ./.github/scripts/smoke-test.sh $out
+          mkdir -p release
+          tar -czf release/AllInOne-$VERSION-linux-x64.tar.gz -C publish AllInOne-$VERSION-linux-x64
+          ls -l release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: release/
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publication et paquets .app
+        run: |
+          mkdir -p release
+          for pair in osx-arm64:apple-silicon osx-x64:intel; do
+            rid=${pair%%:*}; name=${pair##*:}
+            dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
+            dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
+            mkdir -p dist/$rid
+            ./.github/scripts/package-macos.sh publish/$rid $VERSION dist/$rid/AllInOne.zip
+            cp dist/$rid/AllInOne.zip release/AllInOne-$VERSION-macos-$name.zip
+          done
+          ./.github/scripts/smoke-test.sh dist/osx-arm64/AllInOne.app/Contents/MacOS
+          ls -l release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: release/
+
+  release:
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
       - name: Création de la release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          $tag = "v$env:VERSION"
-          $notes = @"
-          **Téléchargement**
-          - ``AllInOne-$env:VERSION-win-x64.zip`` : version légère. Nécessite le [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque).
-          - ``AllInOne-$env:VERSION-win-x64-autonome.zip`` : version autonome, plus lourde, rien à installer.
+          ls -l release
+          cat > notes.md <<NOTES
+          ## Téléchargement
 
-          Décompressez l'archive puis lancez ``AllInOne.exe`` (``allinone-cli.exe`` pour la ligne de commande).
-          "@
-          gh release create $tag (Get-ChildItem release/*.zip).FullName --title "AllInOne $env:VERSION" --target $env:GITHUB_SHA --notes $notes --generate-notes
+          | Système | Fichier |
+          | --- | --- |
+          | Windows (léger) | \`AllInOne-$VERSION-win-x64.zip\` : nécessite le [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
+          | Windows (autonome) | \`AllInOne-$VERSION-win-x64-autonome.zip\` : plus lourd, rien à installer |
+          | Mac Apple Silicon (M1, M2, M3, M4…) | \`AllInOne-$VERSION-macos-apple-silicon.zip\` |
+          | Mac Intel | \`AllInOne-$VERSION-macos-intel.zip\` |
+          | Linux x64 | \`AllInOne-$VERSION-linux-x64.tar.gz\` |
+
+          **Windows** : décompressez l'archive puis lancez \`AllInOne.exe\` (\`allinone-cli.exe\` pour la ligne de commande).
+
+          **Linux** : \`tar -xzf AllInOne-$VERSION-linux-x64.tar.gz\` puis lancez \`./AllInOne\` dans le dossier créé (\`./allinone-cli\` pour la ligne de commande).
+
+          **macOS** : décompressez le zip (double-clic) et glissez **AllInOne.app** dans le dossier Applications.
+          L'application n'est pas signée par Apple (cela demande un compte développeur payant). À la première ouverture, macOS affiche
+          « Apple n'a pas pu vérifier qu'AllInOne ne contenait pas de logiciel malveillant ». Pour l'ouvrir quand même, une seule fois :
+          1. ouvrez-la une première fois (double-clic) et fermez le message ;
+          2. allez dans **Réglages Système → Confidentialité et sécurité**, descendez jusqu'à « AllInOne a été bloqué… » et cliquez sur **Ouvrir quand même** ;
+          3. confirmez avec votre mot de passe. Les ouvertures suivantes se font normalement.
+
+          Sur les versions de macOS plus anciennes que Sequoia, un **clic droit (ou Ctrl-clic) sur AllInOne.app → Ouvrir** suffit.
+          Autre solution, dans le Terminal : \`xattr -dr com.apple.quarantine /Applications/AllInOne.app\`
+
+          **Vidéo et son (FFmpeg)** : sous Windows, l'application propose de télécharger FFmpeg à la première conversion.
+          Sur Mac, installez-le avec [Homebrew](https://brew.sh) : \`brew install ffmpeg\`.
+          Sous Linux, avec le gestionnaire de paquets : \`sudo apt install ffmpeg\` (Debian, Ubuntu), \`sudo dnf install ffmpeg\` (Fedora) ou \`sudo pacman -S ffmpeg\` (Arch).
+          NOTES
+          sed -i 's/^          //' notes.md
+          gh release create "v$VERSION" release/* --title "AllInOne $VERSION" --target "$GITHUB_SHA" --notes-file notes.md --generate-notes

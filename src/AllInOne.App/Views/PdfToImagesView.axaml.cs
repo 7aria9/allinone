@@ -1,7 +1,7 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Globalization;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core;
 using AllInOne.Core.Images;
 using AllInOne.Core.Pdf;
@@ -15,39 +15,33 @@ public partial class PdfToImagesView : UserControl
     public PdfToImagesView()
     {
         InitializeComponent();
+        Dialogs.AcceptFileDrop(Root, async files =>
+        {
+            if (files.FirstOrDefault(PdfComposer.IsPdf) is { } pdf) await LoadPdfAsync(pdf);
+        });
         FormatChoices.Fill(Format, ImageFormatKind.Png);
     }
 
-    private void Format_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Format_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Quality is null) return; // appelé pendant InitializeComponent
         var lossy = FormatChoices.Selected(Format).SupportsQuality();
         Quality.IsEnabled = QualityLabel.IsEnabled = lossy;
     }
 
-    private async void BrowsePdf_Click(object sender, RoutedEventArgs e)
+    private async void BrowsePdf_Click(object? sender, RoutedEventArgs e)
     {
-        var file = Dialogs.OpenFiles(Dialogs.PdfFilter, "Choisir un PDF", multiple: false).FirstOrDefault();
+        var file = (await Dialogs.OpenFiles(this, "Choisir un PDF", false, Dialogs.Pdf)).FirstOrDefault();
         if (file is not null) await LoadPdfAsync(file);
     }
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les images", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les images", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private void Root_DragOver(object sender, DragEventArgs e)
-    {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
-        e.Handled = true;
-    }
 
-    private async void Root_Drop(object sender, DragEventArgs e)
-    {
-        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.FirstOrDefault(PdfComposer.IsPdf) is { } pdf)
-            await LoadPdfAsync(pdf);
-    }
 
     private async Task LoadPdfAsync(string file)
     {
@@ -67,24 +61,24 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            Dialog.Show(Window.GetWindow(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
+            await Dialog.Show(MainWindow.Of(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private async void Convert_Click(object sender, RoutedEventArgs e)
+    private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
+        var owner = MainWindow.Of(this);
         var pdf = PdfPath.Text;
         if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf))
         {
-            Dialog.Show(owner, "Choisissez d'abord un fichier PDF.", "AllInOne");
+            await Dialog.Show(owner, "Choisissez d'abord un fichier PDF.", "AllInOne");
             return;
         }
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0)
         {
-            Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne");
+            await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne");
             return;
         }
         var dpi = Dpi.SelectedItem is ComboBoxItem { Tag: string t } ? int.Parse(t, CultureInfo.InvariantCulture) : 150;
@@ -96,7 +90,7 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            Dialog.Show(owner, ex.Message, "AllInOne");
+            await Dialog.Show(owner, ex.Message, "AllInOne");
             return;
         }
 
@@ -107,6 +101,6 @@ public partial class PdfToImagesView : UserControl
         var ok = await window.RunBusyAsync($"Conversion de {pages.Count} page(s)…",
             p => Task.Run(() => count = PdfRenderer.ToImages(pdf, outputDir, format, dpi, pages, options, progress: p).Count),
             $"Images enregistrées dans {outputDir}");
-        if (ok) window.OfferToOpen(outputDir, $"{count} image(s) créée(s) dans {outputDir}.");
+        if (ok) await window.OfferToOpen(outputDir, $"{count} image(s) créée(s) dans {outputDir}.");
     }
 }

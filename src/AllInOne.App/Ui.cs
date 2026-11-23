@@ -1,14 +1,15 @@
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using AllInOne.Core;
-using Microsoft.Win32;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 
 namespace AllInOne.App;
 
@@ -31,7 +32,7 @@ public abstract class Observable : INotifyPropertyChanged
 /// <summary>Un fichier dans une liste, avec sa miniature chargée en arrière-plan.</summary>
 public sealed class FileItem : Observable
 {
-    private ImageSource? _thumbnail;
+    private Bitmap? _thumbnail;
 
     public FileItem(string path) => Path = path;
 
@@ -39,61 +40,106 @@ public sealed class FileItem : Observable
     public string Name => System.IO.Path.GetFileName(Path);
     public string Folder => System.IO.Path.GetDirectoryName(Path) ?? "";
 
-    public ImageSource? Thumbnail { get => _thumbnail; set => Set(ref _thumbnail, value); }
+    public Bitmap? Thumbnail { get => _thumbnail; set => Set(ref _thumbnail, value); }
 }
 
+/// <summary>Fenêtres de choix de fichiers et de dossiers (natives sous Windows, macOS et Linux).</summary>
 public static class Dialogs
 {
-    public static readonly string ImageFilter =
-        "Images|" + string.Join(";", ImageFormats.InputExtensions.Select(e => "*" + e)) + "|Tous les fichiers|*.*";
+    public static readonly FilePickerFileType Images = Type("Images", ImageFormats.InputExtensions);
+    public static readonly FilePickerFileType Pdf = Type("Documents PDF", new[] { ".pdf" });
+    public static readonly FilePickerFileType PdfOrImages = Type("PDF et images", ImageFormats.InputExtensions.Prepend(".pdf"));
+    public static readonly FilePickerFileType All = new("Tous les fichiers") { Patterns = new[] { "*" } };
 
-    public const string PdfFilter = "Documents PDF|*.pdf";
-
-    public static readonly string PdfOrImageFilter =
-        "PDF et images|*.pdf;" + string.Join(";", ImageFormats.InputExtensions.Select(e => "*" + e)) +
-        "|Documents PDF|*.pdf|" + ImageFilter;
-
-    public static string[] OpenFiles(string filter, string title, bool multiple = true)
+    /// <summary>Type de fichier à partir d'extensions ; majuscules comprises (les filtres sont sensibles à la casse sous Linux).</summary>
+    public static FilePickerFileType Type(string name, IEnumerable<string> extensions)
     {
-        var dialog = new OpenFileDialog { Filter = filter, Multiselect = multiple, Title = title };
-        return dialog.ShowDialog() == true ? dialog.FileNames : Array.Empty<string>();
-    }
-
-    public static string? SavePdf(string suggestedName)
-    {
-        var dialog = new SaveFileDialog
+        var list = extensions.ToList();
+        return new FilePickerFileType(name)
         {
-            Filter = PdfFilter,
-            FileName = suggestedName,
-            DefaultExt = ".pdf",
-            AddExtension = true,
-            OverwritePrompt = true,
-            Title = "Enregistrer le PDF",
+            Patterns = list.Select(e => "*" + e).Concat(list.Select(e => "*" + e.ToUpperInvariant())).Distinct().ToList(),
         };
-        return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
-    public static string? PickFolder(string title, string? initial = null)
+    private static IStorageProvider Storage(Visual owner) =>
+        (TopLevel.GetTopLevel(owner) ?? throw new InvalidOperationException("Fenêtre introuvable.")).StorageProvider;
+
+    public static async Task<string[]> OpenFiles(Visual owner, string title, bool multiple = true, params FilePickerFileType[] types)
     {
-        var dialog = new OpenFolderDialog { Title = title };
-        if (!string.IsNullOrEmpty(initial) && Directory.Exists(initial)) dialog.InitialDirectory = initial;
-        return dialog.ShowDialog() == true ? dialog.FolderName : null;
+        var files = await Storage(owner).OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = multiple,
+            FileTypeFilter = types.Append(All).ToList(),
+        });
+        return files.Select(f => f.TryGetLocalPath()).OfType<string>().ToArray();
+    }
+
+    public static async Task<string?> SavePdf(Visual owner, string suggestedName)
+    {
+        var file = await Storage(owner).SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Enregistrer le PDF",
+            SuggestedFileName = suggestedName,
+            DefaultExtension = "pdf",
+            FileTypeChoices = new[] { Pdf },
+            ShowOverwritePrompt = true,
+        });
+        var path = file?.TryGetLocalPath();
+        if (path is not null && !path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) path += ".pdf";
+        return path;
+    }
+
+    public static async Task<string?> PickFolder(Visual owner, string title, string? initial = null)
+    {
+        var storage = Storage(owner);
+        IStorageFolder? start = null;
+        if (!string.IsNullOrWhiteSpace(initial) && Directory.Exists(initial))
+            start = await storage.TryGetFolderFromPathAsync(initial);
+        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            SuggestedStartLocation = start,
+        });
+        return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+    }
+
+    /// <summary>Chemins locaux des fichiers glissés depuis l'Explorateur, le Finder ou le gestionnaire de fichiers.</summary>
+    public static string[] DroppedFiles(DragEventArgs e) =>
+#pragma warning disable CS0618 // API de glisser-déposer encore prise en charge dans Avalonia 11
+        e.Data.GetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToArray() ?? Array.Empty<string>();
+#pragma warning restore CS0618
+
+    public static bool HasFiles(DragEventArgs e) =>
+#pragma warning disable CS0618
+        e.Data.Contains(DataFormats.Files);
+#pragma warning restore CS0618
+
+    /// <summary>Accepte le dépôt de fichiers n'importe où sur <paramref name="target"/>.</summary>
+    public static void AcceptFileDrop(Control target, Func<string[], Task> onDrop)
+    {
+        DragDrop.SetAllowDrop(target, true);
+        target.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+        {
+            e.DragEffects = HasFiles(e) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        });
+        target.AddHandler(DragDrop.DropEvent, async (_, e) =>
+        {
+            var files = DroppedFiles(e);
+            e.Handled = true;
+            if (files.Length > 0) await onDrop(files);
+        });
     }
 }
 
 public static class Thumbnails
 {
-    /// <summary>Crée une image WPF figée (utilisable depuis n'importe quel thread) à partir d'octets PNG.</summary>
-    public static BitmapImage FromPng(byte[] png)
+    public static Bitmap FromPng(byte[] png)
     {
-        var bitmap = new BitmapImage();
         using var ms = new MemoryStream(png);
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.StreamSource = ms;
-        bitmap.EndInit();
-        bitmap.Freeze();
-        return bitmap;
+        return new Bitmap(ms);
     }
 
     /// <summary>Charge les miniatures d'images une par une, sans bloquer l'interface. Les erreurs sont ignorées.</summary>
@@ -103,8 +149,8 @@ public static class Thumbnails
         {
             try
             {
-                var png = await Task.Run(() => Core.Pdf.PdfRenderer.RenderImageThumbnailPng(item.Path, width));
-                item.Thumbnail = FromPng(png);
+                var bitmap = await Task.Run(() => FromPng(Core.Pdf.PdfRenderer.RenderImageThumbnailPng(item.Path, width)));
+                item.Thumbnail = bitmap;
             }
             catch
             {
@@ -116,10 +162,14 @@ public static class Thumbnails
 
 public static class ListTools
 {
+    private const string DragFormat = "application/x-allinone-items";
+
+    private static List<T> Selected<T>(ListBox list) => (list.SelectedItems ?? new ArrayList()).Cast<T>().ToList();
+
     /// <summary>Déplace les éléments sélectionnés d'un cran vers le haut (-1) ou le bas (+1).</summary>
     public static void MoveSelected<T>(ListBox list, ObservableCollection<T> items, int direction)
     {
-        var selected = list.SelectedItems.Cast<T>().ToList();
+        var selected = Selected<T>(list);
         if (selected.Count == 0) return;
         var indexes = selected.Select(items.IndexOf).OrderBy(i => i).ToList();
         if (direction < 0)
@@ -138,7 +188,7 @@ public static class ListTools
     /// <summary>Déplace les éléments sélectionnés au début ou à la fin.</summary>
     public static void MoveSelectedToEdge<T>(ListBox list, ObservableCollection<T> items, bool toStart)
     {
-        var selected = list.SelectedItems.Cast<T>().OrderBy(items.IndexOf).ToList();
+        var selected = Selected<T>(list).OrderBy(items.IndexOf).ToList();
         if (selected.Count == 0) return;
         foreach (var s in selected) items.Remove(s);
         if (toStart) for (var i = 0; i < selected.Count; i++) items.Insert(i, selected[i]);
@@ -149,60 +199,75 @@ public static class ListTools
     public static void RemoveSelected<T>(ListBox list, ObservableCollection<T> items)
     {
         var first = list.SelectedIndex;
-        foreach (var s in list.SelectedItems.Cast<T>().ToList()) items.Remove(s);
+        foreach (var s in Selected<T>(list)) items.Remove(s);
         if (items.Count > 0) list.SelectedIndex = Math.Clamp(first, 0, items.Count - 1);
     }
 
-    private static void Reselect<T>(ListBox list, IEnumerable<T> selected)
+    private static void Reselect<T>(ListBox list, IReadOnlyList<T> selected)
     {
-        list.SelectedItems.Clear();
-        foreach (var s in selected) list.SelectedItems.Add(s);
-        list.ScrollIntoView(selected.First());
+        list.SelectedItems?.Clear();
+        foreach (var s in selected) list.SelectedItems?.Add(s);
+        if (selected.Count > 0) list.ScrollIntoView(selected[0]!);
     }
 
     /// <summary>
-    /// Active le glisser-déposer : réorganisation des éléments à la souris, et dépôt de fichiers depuis l'Explorateur
-    /// (<paramref name="onFilesDropped"/> reçoit les fichiers et l'index d'insertion).
+    /// Active le glisser-déposer : réorganisation des éléments à la souris, et dépôt de fichiers depuis le gestionnaire
+    /// de fichiers (<paramref name="onFilesDropped"/> reçoit les fichiers et l'index d'insertion).
     /// </summary>
     public static void EnableDragDrop<T>(ListBox list, ObservableCollection<T> items, Action<string[], int> onFilesDropped)
         where T : class
     {
         Point? start = null;
-        list.AllowDrop = true;
+        PointerPressedEventArgs? pressEvent = null;
+        DragDrop.SetAllowDrop(list, true);
 
-        list.PreviewMouseLeftButtonDown += (_, e) =>
-            start = ContainerAt(list, e.OriginalSource as DependencyObject) is null ? null : e.GetPosition(list);
-
-        list.PreviewMouseMove += (_, e) =>
+        list.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
         {
-            if (start is null || e.LeftButton != MouseButtonState.Pressed) return;
+            var onItem = ContainerAt(e.Source) is not null && e.GetCurrentPoint(list).Properties.IsLeftButtonPressed;
+            start = onItem ? e.GetPosition(list) : null;
+            pressEvent = onItem ? e : null;
+        }, RoutingStrategies.Tunnel, handledEventsToo: true);
+
+        list.AddHandler(InputElement.PointerReleasedEvent, (_, _) => start = null, RoutingStrategies.Tunnel, handledEventsToo: true);
+
+        list.AddHandler(InputElement.PointerMovedEvent, async (_, e) =>
+        {
+            if (start is null || pressEvent is null || !e.GetCurrentPoint(list).Properties.IsLeftButtonPressed) return;
             var delta = e.GetPosition(list) - start.Value;
-            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance &&
-                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            if (Math.Abs(delta.X) < 6 && Math.Abs(delta.Y) < 6) return;
             start = null;
-            var dragged = list.SelectedItems.Cast<T>().OrderBy(items.IndexOf).ToList();
+            var dragged = Selected<T>(list).OrderBy(items.IndexOf).ToList();
             if (dragged.Count == 0) return;
-            DragDrop.DoDragDrop(list, new DataObject(typeof(List<T>), dragged), DragDropEffects.Move);
-        };
+#pragma warning disable CS0618
+            var data = new DataObject();
+            data.Set(DragFormat, dragged);
+            await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+#pragma warning restore CS0618
+        }, RoutingStrategies.Tunnel, handledEventsToo: true);
 
-        list.DragOver += (_, e) =>
+        list.AddHandler(DragDrop.DragOverEvent, (_, e) =>
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy
-                : e.Data.GetDataPresent(typeof(List<T>)) ? DragDropEffects.Move : DragDropEffects.None;
+#pragma warning disable CS0618
+            e.DragEffects = Dialogs.HasFiles(e) ? DragDropEffects.Copy
+                : e.Data.Contains(DragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+#pragma warning restore CS0618
             e.Handled = true;
-        };
+        });
 
-        list.Drop += (_, e) =>
+        list.AddHandler(DragDrop.DropEvent, (_, e) =>
         {
-            var target = ContainerAt(list, e.OriginalSource as DependencyObject);
-            var index = target is null ? items.Count : list.ItemContainerGenerator.IndexFromContainer(target);
+            var target = ContainerAt(e.Source);
+            var index = target is null ? items.Count : list.IndexFromContainer(target);
+            if (index < 0) index = items.Count;
             if (target is not null && IsAfterMiddle(target, e)) index++;
 
-            if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
+            var files = Dialogs.DroppedFiles(e);
+#pragma warning disable CS0618
+            if (files.Length > 0)
             {
                 onFilesDropped(files, index);
             }
-            else if (e.Data.GetData(typeof(List<T>)) is List<T> dragged)
+            else if (e.Data.Get(DragFormat) is List<T> dragged)
             {
                 var insertAt = index - dragged.Count(d => items.IndexOf(d) < index);
                 foreach (var d in dragged) items.Remove(d);
@@ -210,26 +275,19 @@ public static class ListTools
                 for (var i = 0; i < dragged.Count; i++) items.Insert(insertAt + i, dragged[i]);
                 Reselect(list, dragged);
             }
+#pragma warning restore CS0618
             e.Handled = true;
-        };
+        });
     }
 
     private static bool IsAfterMiddle(ListBoxItem item, DragEventArgs e)
     {
         var p = e.GetPosition(item);
-        // Les vignettes de pages sont disposées horizontalement (WrapPanel), les fichiers verticalement.
-        return item.ActualWidth > item.ActualHeight * 1.5 ? p.Y > item.ActualHeight / 2 : p.X > item.ActualWidth / 2;
+        var size = item.Bounds.Size;
+        // Les vignettes de pages sont disposées en grille (WrapPanel), les fichiers en colonne.
+        return size.Width > size.Height * 1.5 ? p.Y > size.Height / 2 : p.X > size.Width / 2;
     }
 
-    private static ListBoxItem? ContainerAt(ListBox list, DependencyObject? source)
-    {
-        while (source is not null and not ListBox)
-        {
-            if (source is ListBoxItem item) return item;
-            source = source is Visual or System.Windows.Media.Media3D.Visual3D
-                ? VisualTreeHelper.GetParent(source)
-                : LogicalTreeHelper.GetParent(source);
-        }
-        return null;
-    }
+    private static ListBoxItem? ContainerAt(object? source) =>
+        source as ListBoxItem ?? (source as Visual)?.FindAncestorOfType<ListBoxItem>();
 }

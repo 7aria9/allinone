@@ -1,7 +1,7 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core;
 using AllInOne.Core.Images;
 
@@ -15,7 +15,7 @@ public partial class ConvertImagesView : UserControl
     {
         InitializeComponent();
         Files.ItemsSource = _items;
-        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _items.CollectionChanged += (_, _) => EmptyHint.IsVisible = _items.Count == 0;
         FormatChoices.Fill(Format, ImageFormatKind.Jpeg);
         ListTools.EnableDragDrop(Files, _items, AddFiles);
     }
@@ -30,21 +30,21 @@ public partial class ConvertImagesView : UserControl
         _ = Thumbnails.LoadImageThumbnailsAsync(added);
     }
 
-    private void Format_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Format_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Quality is null) return; // appelé pendant InitializeComponent
         Quality.IsEnabled = QualityLabel.IsEnabled = FormatChoices.Selected(Format).SupportsQuality();
     }
 
-    private void Add_Click(object sender, RoutedEventArgs e) =>
-        AddFiles(Dialogs.OpenFiles(Dialogs.ImageFilter, "Choisir des images"), _items.Count);
+    private async void Add_Click(object? sender, RoutedEventArgs e) =>
+        AddFiles((await Dialogs.OpenFiles(this, "Choisir des images", true, Dialogs.Images)), _items.Count);
 
-    private void Remove_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
-    private void Clear_Click(object sender, RoutedEventArgs e) => _items.Clear();
+    private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
+    private void Clear_Click(object? sender, RoutedEventArgs e) => _items.Clear();
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les images converties", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les images converties", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
@@ -56,15 +56,15 @@ public partial class ConvertImagesView : UserControl
         return false;
     }
 
-    private async void Convert_Click(object sender, RoutedEventArgs e)
+    private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
-        if (_items.Count == 0) { Dialog.Show(owner, "Ajoutez au moins une image.", "AllInOne"); return; }
+        var owner = MainWindow.Of(this);
+        if (_items.Count == 0) { await Dialog.Show(owner, "Ajoutez au moins une image.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
         if (!TryParseSize(MaxWidthBox.Text, out var maxW) || !TryParseSize(MaxHeightBox.Text, out var maxH))
         {
-            Dialog.Show(owner, "Les dimensions maximales doivent être des nombres entiers positifs.", "AllInOne");
+            await Dialog.Show(owner, "Les dimensions maximales doivent être des nombres entiers positifs.", "AllInOne");
             return;
         }
 
@@ -75,6 +75,6 @@ public partial class ConvertImagesView : UserControl
         var ok = await window.RunBusyAsync($"Conversion de {paths.Count} image(s)…",
             p => Task.Run(() => ImageConverter.ConvertMany(paths, outputDir, format, options, p)),
             $"Images converties dans {outputDir}");
-        if (ok) window.OfferToOpen(outputDir, $"{paths.Count} image(s) convertie(s) dans {outputDir}.");
+        if (ok) await window.OfferToOpen(outputDir, $"{paths.Count} image(s) convertie(s) dans {outputDir}.");
     }
 }

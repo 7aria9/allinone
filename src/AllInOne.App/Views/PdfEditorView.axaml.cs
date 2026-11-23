@@ -1,11 +1,9 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 using AllInOne.Core;
 using AllInOne.Core.Pdf;
 
@@ -14,7 +12,7 @@ namespace AllInOne.App.Views;
 /// <summary>Une page dans l'éditeur : son origine (page de PDF ou image), sa rotation et sa miniature.</summary>
 public sealed class PageItem : Observable
 {
-    private ImageSource? _thumbnail;
+    private Avalonia.Media.Imaging.Bitmap? _thumbnail;
     private int _rotation;
     private int _number;
 
@@ -35,7 +33,7 @@ public sealed class PageItem : Observable
     /// <summary>Rotation ajoutée par l'utilisateur (0, 90, 180, 270).</summary>
     public int Rotation { get => _rotation; set => Set(ref _rotation, PdfAngles.Normalize(value)); }
 
-    public ImageSource? Thumbnail { get => _thumbnail; set => Set(ref _thumbnail, value); }
+    public Avalonia.Media.Imaging.Bitmap? Thumbnail { get => _thumbnail; set => Set(ref _thumbnail, value); }
 
     public PageSource ToSource() => Source with { Rotation = Rotation };
 }
@@ -63,7 +61,7 @@ public partial class PdfEditorView : UserControl
     {
         for (var i = 0; i < _pages.Count; i++) _pages[i].Number = i + 1;
         var files = _pages.Select(p => p.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-        EmptyHint.Visibility = _pages.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyHint.IsVisible = _pages.Count == 0;
         Summary.Text = _pages.Count == 0 ? "Aucune page." : $"{_pages.Count} page(s) provenant de {files} fichier(s).";
         if (_pages.Count == 0) { _firstPdf = null; _pdfCache.Clear(); }
     }
@@ -71,9 +69,9 @@ public partial class PdfEditorView : UserControl
     private int InsertionIndex() =>
         Pages.SelectedItems.Count == 0 ? _pages.Count : Pages.SelectedItems.Cast<PageItem>().Max(_pages.IndexOf) + 1;
 
-    private async void Add_Click(object sender, RoutedEventArgs e)
+    private async void Add_Click(object? sender, RoutedEventArgs e)
     {
-        var files = Dialogs.OpenFiles(Dialogs.PdfOrImageFilter, "Choisir des PDF ou des images");
+        var files = (await Dialogs.OpenFiles(this, "Choisir des PDF ou des images", true, Dialogs.PdfOrImages));
         if (files.Length > 0) await AddFilesAsync(files, InsertionIndex());
     }
 
@@ -121,9 +119,9 @@ public partial class PdfEditorView : UserControl
         }
     }
 
-    private void Delete_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Pages, _pages);
+    private void Delete_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Pages, _pages);
 
-    private void Pages_KeyDown(object sender, KeyEventArgs e)
+    private void Pages_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Delete) { ListTools.RemoveSelected(Pages, _pages); e.Handled = true; }
     }
@@ -133,16 +131,16 @@ public partial class PdfEditorView : UserControl
         foreach (var page in Pages.SelectedItems.Cast<PageItem>()) page.Rotation += degrees;
     }
 
-    private void RotateLeft_Click(object sender, RoutedEventArgs e) => Rotate(-90);
-    private void RotateRight_Click(object sender, RoutedEventArgs e) => Rotate(90);
-    private void Up_Click(object sender, RoutedEventArgs e) => ListTools.MoveSelected(Pages, _pages, -1);
-    private void Down_Click(object sender, RoutedEventArgs e) => ListTools.MoveSelected(Pages, _pages, +1);
-    private void Start_Click(object sender, RoutedEventArgs e) => ListTools.MoveSelectedToEdge(Pages, _pages, toStart: true);
-    private void End_Click(object sender, RoutedEventArgs e) => ListTools.MoveSelectedToEdge(Pages, _pages, toStart: false);
-    private void SelectAll_Click(object sender, RoutedEventArgs e) => Pages.SelectAll();
-    private void Clear_Click(object sender, RoutedEventArgs e) => _pages.Clear();
+    private void RotateLeft_Click(object? sender, RoutedEventArgs e) => Rotate(-90);
+    private void RotateRight_Click(object? sender, RoutedEventArgs e) => Rotate(90);
+    private void Up_Click(object? sender, RoutedEventArgs e) => ListTools.MoveSelected(Pages, _pages, -1);
+    private void Down_Click(object? sender, RoutedEventArgs e) => ListTools.MoveSelected(Pages, _pages, +1);
+    private void Start_Click(object? sender, RoutedEventArgs e) => ListTools.MoveSelectedToEdge(Pages, _pages, toStart: true);
+    private void End_Click(object? sender, RoutedEventArgs e) => ListTools.MoveSelectedToEdge(Pages, _pages, toStart: false);
+    private void SelectAll_Click(object? sender, RoutedEventArgs e) => Pages.SelectAll();
+    private void Clear_Click(object? sender, RoutedEventArgs e) => _pages.Clear();
 
-    private void Reverse_Click(object sender, RoutedEventArgs e)
+    private void Reverse_Click(object? sender, RoutedEventArgs e)
     {
         for (var i = 0; i < _pages.Count / 2; i++)
         {
@@ -152,16 +150,16 @@ public partial class PdfEditorView : UserControl
         }
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object? sender, RoutedEventArgs e)
     {
         if (_pages.Count == 0)
         {
-            Dialog.Show(Window.GetWindow(this), "Le document ne contient aucune page.", "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), "Le document ne contient aucune page.", "AllInOne");
             return;
         }
 
         var suggested = _firstPdf is null ? "document.pdf" : Path.GetFileNameWithoutExtension(_firstPdf) + "_modifie.pdf";
-        var output = Dialogs.SavePdf(suggested);
+        var output = await Dialogs.SavePdf(this, suggested);
         if (output is null) return;
 
         var sources = _pages.Select(p => p.ToSource()).ToList();
@@ -182,6 +180,6 @@ public partial class PdfEditorView : UserControl
             _pages.Clear();
             await AddFilesAsync(new[] { output }, 0);
         }
-        window.OfferToOpen(output, $"Le PDF a été enregistré ({sources.Count} page(s)).");
+        await window.OfferToOpen(output, $"Le PDF a été enregistré ({sources.Count} page(s)).");
     }
 }

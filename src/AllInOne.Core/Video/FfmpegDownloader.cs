@@ -13,6 +13,14 @@ public static class FfmpegDownloader
 
     public static bool IsSupportedPlatform => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem;
 
+    /// <summary>Comment installer FFmpeg là où AllInOne ne le télécharge pas lui-même (macOS, Linux).</summary>
+    public static string InstallHint =>
+        OperatingSystem.IsMacOS()
+            ? "Installe-le avec Homebrew (https://brew.sh) : ouvre le Terminal et tape « brew install ffmpeg », puis reviens ici."
+            : OperatingSystem.IsLinux()
+                ? "Installe-le avec le gestionnaire de paquets, par exemple « sudo apt install ffmpeg » (Debian, Ubuntu, Mint), « sudo dnf install ffmpeg » (Fedora) ou « sudo pacman -S ffmpeg » (Arch), puis reviens ici."
+                : "Installe-le puis ajoute-le au PATH.";
+
     /// <summary>Télécharge et installe FFmpeg. Renvoie le chemin de ffmpeg.exe.</summary>
     public static async Task<string> DownloadAsync(IProgress<double>? progress = null, CancellationToken cancellationToken = default,
         string url = WindowsDownloadUrl, string? targetDirectory = null)

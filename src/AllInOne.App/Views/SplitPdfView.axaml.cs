@@ -1,7 +1,7 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core.Pdf;
 using AllInOne.Core.Video;
 
@@ -15,8 +15,12 @@ public partial class SplitPdfView : UserControl, IMediaListView
     public SplitPdfView()
     {
         InitializeComponent();
+        Dialogs.AcceptFileDrop(Root, async files =>
+        {
+            if (files.FirstOrDefault(PdfComposer.IsPdf) is { } pdf) await LoadPdfAsync(pdf);
+        });
         Results.ItemsSource = _results;
-        _results.CollectionChanged += (_, _) => EmptyHint.Visibility = _results.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _results.CollectionChanged += (_, _) => EmptyHint.IsVisible = _results.Count == 0;
     }
 
     void IMediaListView.AddSmokeTestSamples()
@@ -27,38 +31,28 @@ public partial class SplitPdfView : UserControl, IMediaListView
         Mode.SelectedIndex = 2;
     }
 
-    private string SelectedMode => (string)((ComboBoxItem)Mode.SelectedItem).Tag;
+    private string SelectedMode => (string)((ComboBoxItem)Mode.SelectedItem!).Tag!;
 
-    private void Mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Mode_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (EveryPanel is null || RangesPanel is null) return; // pendant InitializeComponent
-        EveryPanel.Visibility = SelectedMode == "Every" ? Visibility.Visible : Visibility.Collapsed;
-        RangesPanel.Visibility = SelectedMode == "Ranges" ? Visibility.Visible : Visibility.Collapsed;
+        EveryPanel.IsVisible = SelectedMode == "Every";
+        RangesPanel.IsVisible = SelectedMode == "Ranges";
     }
 
-    private async void BrowsePdf_Click(object sender, RoutedEventArgs e)
+    private async void BrowsePdf_Click(object? sender, RoutedEventArgs e)
     {
-        var file = Dialogs.OpenFiles(Dialogs.PdfFilter, "Choisir un PDF à découper", multiple: false).FirstOrDefault();
+        var file = (await Dialogs.OpenFiles(this, "Choisir un PDF à découper", false, Dialogs.Pdf)).FirstOrDefault();
         if (file is not null) await LoadPdfAsync(file);
     }
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les morceaux", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les morceaux", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private void Root_DragOver(object sender, DragEventArgs e)
-    {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
-        e.Handled = true;
-    }
 
-    private async void Root_Drop(object sender, DragEventArgs e)
-    {
-        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.FirstOrDefault(PdfComposer.IsPdf) is { } pdf)
-            await LoadPdfAsync(pdf);
-    }
 
     private async Task LoadPdfAsync(string file)
     {
@@ -73,30 +67,30 @@ public partial class SplitPdfView : UserControl, IMediaListView
         }
         catch (Exception ex)
         {
-            Dialog.Show(Window.GetWindow(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
+            await Dialog.Show(MainWindow.Of(this), $"Impossible d'ouvrir ce PDF : {ex.Message}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private async void Split_Click(object sender, RoutedEventArgs e)
+    private async void Split_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
+        var owner = MainWindow.Of(this);
         var pdf = PdfPath.Text;
-        if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf)) { Dialog.Show(owner, "Choisissez d'abord un PDF.", "AllInOne"); return; }
+        if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf)) { await Dialog.Show(owner, "Choisissez d'abord un PDF.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
         var mode = SelectedMode;
         var every = 0;
         if (mode == "Every" && (!int.TryParse(EveryCount.Text.Trim(), out every) || every < 1))
         {
-            Dialog.Show(owner, "Indiquez un nombre de pages par fichier (1 ou plus).", "AllInOne");
+            await Dialog.Show(owner, "Indiquez un nombre de pages par fichier (1 ou plus).", "AllInOne");
             return;
         }
         var ranges = Ranges.Text;
         if (mode == "Ranges" && string.IsNullOrWhiteSpace(ranges))
         {
-            Dialog.Show(owner, "Indiquez les plages de pages, par exemple « 1-3, 4-7, 8- ».", "AllInOne");
+            await Dialog.Show(owner, "Indiquez les plages de pages, par exemple « 1-3, 4-7, 8- ».", "AllInOne");
             return;
         }
 
@@ -128,6 +122,6 @@ public partial class SplitPdfView : UserControl, IMediaListView
             _results.Add(item);
         }
         window.SetStatus($"{files.Count} fichier(s) créé(s) à partir de {_pageCount} page(s).");
-        window.OfferToOpen(outputDir, $"{files.Count} PDF créé(s) dans {outputDir}.");
+        await window.OfferToOpen(outputDir, $"{files.Count} PDF créé(s) dans {outputDir}.");
     }
 }

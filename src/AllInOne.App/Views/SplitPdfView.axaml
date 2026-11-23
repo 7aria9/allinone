@@ -1,10 +1,7 @@
 <UserControl x:Class="AllInOne.App.Views.SplitPdfView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <UserControl.Resources>
-        <ResourceDictionary Source="FileListTemplate.xaml" />
-    </UserControl.Resources>
-    <Grid AllowDrop="True" Drop="Root_Drop" DragOver="Root_DragOver" Background="Transparent">
+    <Grid x:Name="Root" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -15,54 +12,54 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.ColumnSpan="2" Text="Découper un PDF" Style="{StaticResource PageTitle}" />
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Hint}"
+        <TextBlock Grid.ColumnSpan="2" Text="Découper un PDF" Classes="pageTitle" />
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="hint"
                    Text="Sépare un PDF en plusieurs fichiers : une page par fichier, par paquets de pages ou selon les plages que tu choisis. Tu peux glisser un PDF n'importe où sur cet écran." />
 
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,16,0">
+        <Border Grid.Row="2" Classes="card" Margin="0,0,16,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="FICHIER" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="FICHIER" Classes="section" />
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowsePdf_Click" Margin="8,0,0,0" />
                         <TextBox x:Name="PdfPath" IsReadOnly="True" />
                     </DockPanel>
                     <TextBlock x:Name="PageCount" Foreground="{StaticResource TextDim}" FontSize="12" Margin="2,0,0,16" />
 
-                    <TextBlock Text="DÉCOUPAGE" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="DÉCOUPAGE" Classes="section" />
                     <ComboBox x:Name="Mode" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="Mode_SelectionChanged">
                         <ComboBoxItem Content="Une page par fichier" Tag="Each" />
                         <ComboBoxItem Content="Toutes les N pages" Tag="Every" />
                         <ComboBoxItem Content="Selon des plages de pages" Tag="Ranges" />
                     </ComboBox>
-                    <DockPanel x:Name="EveryPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                    <DockPanel x:Name="EveryPanel" IsVisible="False" Margin="0,0,0,8">
                         <Label Content="Pages par fichier" />
                         <TextBox x:Name="EveryCount" Text="2" />
                     </DockPanel>
-                    <StackPanel x:Name="RangesPanel" Visibility="Collapsed">
-                        <TextBox x:Name="Ranges" Margin="0,0,0,6" ToolTip="Chaque plage séparée par une virgule devient un fichier" />
-                        <TextBlock Foreground="{StaticResource TextDim}" FontSize="12" TextWrapping="Wrap"
+                    <StackPanel x:Name="RangesPanel" IsVisible="False">
+                        <TextBox x:Name="Ranges" Margin="0,0,0,6" ToolTip.Tip="Chaque plage séparée par une virgule devient un fichier" />
+                        <TextBlock Classes="note"
                                    Text="Chaque plage devient un fichier. Exemple : « 1-3, 4-7, 8- » donne trois PDF (pages 1 à 3, 4 à 7, puis 8 jusqu'à la fin)." />
                     </StackPanel>
 
-                    <TextBlock Text="DESTINATION" Style="{StaticResource SectionTitle}" Margin="0,18,0,10" />
+                    <TextBlock Text="DESTINATION" Classes="section" Margin="0,18,0,10" />
                     <DockPanel Margin="0,0,0,18">
                         <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowseOutput_Click" Margin="8,0,0,0" />
                         <TextBox x:Name="OutputDir" />
                     </DockPanel>
 
-                    <Button Content="✂  Découper" Style="{StaticResource PrimaryButton}" Click="Split_Click"
+                    <Button Content="✂  Découper" Classes="primary" Click="Split_Click"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="14,10" FontSize="14" />
                 </StackPanel>
             </ScrollViewer>
         </Border>
 
-        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource Card}">
+        <Border Grid.Row="2" Grid.Column="1" Classes="card">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="FICHIERS CRÉÉS" Style="{StaticResource SectionTitle}" />
+                <TextBlock DockPanel.Dock="Top" Text="FICHIERS CRÉÉS" Classes="section" />
                 <Grid>
-                    <TextBlock x:Name="EmptyHint" Style="{StaticResource DropHint}" Text="Dépose un PDF ici&#x0a;puis choisis comment le découper" />
-                    <ListBox x:Name="Results" ItemTemplate="{StaticResource MediaItemTemplate}"
+                    <TextBlock x:Name="EmptyHint" Classes="dropHint" Text="Dépose un PDF ici&#x0a;puis choisis comment le découper" />
+                    <ListBox x:Name="Results" Classes="cards" ItemTemplate="{StaticResource MediaItemTemplate}"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
                 </Grid>
             </DockPanel>

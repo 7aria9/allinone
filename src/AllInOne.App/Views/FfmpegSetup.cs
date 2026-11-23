@@ -1,10 +1,13 @@
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core.Video;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace AllInOne.App.Views;
 
-/// <summary>Affichage de l'état de FFmpeg et téléchargement à la demande (partagé par les écrans vidéo et audio).</summary>
+/// <summary>
+/// Affichage de l'état de FFmpeg (partagé par les écrans vidéo et audio). Sous Windows, AllInOne le télécharge à la
+/// demande ; sous macOS et Linux, il indique comment l'installer (Homebrew, gestionnaire de paquets).
+/// </summary>
 internal static class FfmpegSetup
 {
     public static void RefreshStatus(TextBlock status, Button downloadButton)
@@ -13,16 +16,16 @@ internal static class FfmpegSetup
         if (path is not null)
         {
             status.Text = $"✓ FFmpeg prêt : {path}";
-            downloadButton.Visibility = Visibility.Collapsed;
+            downloadButton.IsVisible = false;
             return;
         }
         status.Text = FfmpegDownloader.IsSupportedPlatform
             ? "FFmpeg n'est pas encore installé. Il sera téléchargé à la première conversion (environ 200 Mo, une seule fois)."
-            : "FFmpeg est introuvable : installez-le et ajoutez-le au PATH.";
-        downloadButton.Visibility = FfmpegDownloader.IsSupportedPlatform ? Visibility.Visible : Visibility.Collapsed;
+            : "FFmpeg n'est pas installé. " + FfmpegDownloader.InstallHint;
+        downloadButton.IsVisible = FfmpegDownloader.IsSupportedPlatform;
     }
 
-    public static async Task<bool> DownloadAsync(DependencyObject view)
+    public static async Task<bool> DownloadAsync(Visual view)
     {
         var window = MainWindow.Of(view);
         var ok = await window.RunBusyAsync("Téléchargement de FFmpeg (environ 200 Mo)…",
@@ -30,18 +33,18 @@ internal static class FfmpegSetup
         return ok && FfmpegLocator.Find() is not null;
     }
 
-    /// <summary>Vérifie que FFmpeg est disponible, en proposant de le télécharger. Renvoie false si l'utilisateur renonce.</summary>
-    public static async Task<bool> EnsureAsync(DependencyObject view)
+    /// <summary>Vérifie que FFmpeg est disponible, en proposant de le télécharger (Windows). Renvoie false si l'utilisateur renonce.</summary>
+    public static async Task<bool> EnsureAsync(Visual view)
     {
         if (FfmpegLocator.Find() is not null) return true;
-        var owner = Window.GetWindow(view);
+        var owner = MainWindow.Of(view);
         if (!FfmpegDownloader.IsSupportedPlatform)
         {
-            Dialog.Show(owner, "FFmpeg est introuvable. Installez-le puis réessayez.", "AllInOne",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            await Dialog.Show(owner, "La conversion utilise FFmpeg, un logiciel libre séparé, qui n'est pas encore installé.\n\n" +
+                                     FfmpegDownloader.InstallHint, "Installer FFmpeg", MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
-        var answer = Dialog.Show(owner,
+        var answer = await Dialog.Show(owner,
             "La conversion utilise FFmpeg, un logiciel libre séparé.\n\nLe télécharger maintenant ? (environ 200 Mo, une seule fois)",
             "Installer FFmpeg", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
         return answer == MessageBoxResult.Yes && await DownloadAsync(view);

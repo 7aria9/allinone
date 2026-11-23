@@ -1,16 +1,13 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core.Video;
 
 namespace AllInOne.App.Views;
 
 public partial class ConvertAudioView : UserControl, IMediaListView
 {
-    private static readonly string AudioFilter =
-        "Sons et vidéos|" + string.Join(";", AudioFormats.InputExtensions.Concat(VideoFormats.InputExtensions).Select(e => "*" + e)) +
-        "|Sons|" + string.Join(";", AudioFormats.InputExtensions.Select(e => "*" + e)) + "|Tous les fichiers|*.*";
 
     private readonly ObservableCollection<MediaItem> _items = new();
 
@@ -18,9 +15,9 @@ public partial class ConvertAudioView : UserControl, IMediaListView
     {
         InitializeComponent();
         Files.ItemsSource = _items;
-        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _items.CollectionChanged += (_, _) => EmptyHint.IsVisible = _items.Count == 0;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
-        IsVisibleChanged += (_, _) => { if (IsVisible) RefreshFfmpegStatus(); };
+        PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty && IsVisible) RefreshFfmpegStatus(); };
         Loaded += (_, _) => RefreshFfmpegStatus();
     }
 
@@ -47,27 +44,29 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format non reconnu.");
     }
 
-    private void Add_Click(object sender, RoutedEventArgs e) =>
-        AddFiles(Dialogs.OpenFiles(AudioFilter, "Choisir des sons ou des vidéos"), _items.Count);
+    private async void Add_Click(object? sender, RoutedEventArgs e) =>
+        AddFiles(await Dialogs.OpenFiles(this, "Choisir des sons ou des vidéos", true,
+            Dialogs.Type("Sons et vidéos", AudioFormats.InputExtensions.Concat(VideoFormats.InputExtensions)),
+            Dialogs.Type("Sons", AudioFormats.InputExtensions)), _items.Count);
 
-    private void Remove_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
-    private void Clear_Click(object sender, RoutedEventArgs e) => _items.Clear();
+    private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
+    private void Clear_Click(object? sender, RoutedEventArgs e) => _items.Clear();
 
     private AudioFormat SelectedFormat => Enum.Parse<AudioFormat>((string)((ComboBoxItem)Format.SelectedItem).Tag);
 
-    private void Format_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Format_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Quality is null) return; // pendant InitializeComponent
         Quality.IsEnabled = QualityLabel.IsEnabled = !SelectedFormat.IsLossless();
     }
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les sons convertis", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les sons convertis", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private async void Download_Click(object sender, RoutedEventArgs e)
+    private async void Download_Click(object? sender, RoutedEventArgs e)
     {
         await FfmpegSetup.DownloadAsync(this);
         RefreshFfmpegStatus();
@@ -79,14 +78,15 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         return value > 0 ? value : null;
     }
 
-    private async void Convert_Click(object sender, RoutedEventArgs e)
+    private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
-        if (_items.Count == 0) { Dialog.Show(owner, "Ajoutez au moins un fichier.", "AllInOne"); return; }
+        var owner = MainWindow.Of(this);
+        if (_items.Count == 0) { await Dialog.Show(owner, "Ajoutez au moins un fichier.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
-        if (!MediaItems.TryReadTrim(TrimStart, TrimEnd, owner, out var trimStart, out var trimEnd)) return;
+        var (trimOk, trimStart, trimEnd) = await MediaItems.ReadTrimAsync(TrimStart, TrimEnd, owner);
+        if (!trimOk) return;
 
         var ready = await FfmpegSetup.EnsureAsync(this);
         RefreshFfmpegStatus();
@@ -116,10 +116,10 @@ public partial class ConvertAudioView : UserControl, IMediaListView
             window.SetStatus($"{count} fichier(s) converti(s), {result.Failures.Count} en échec.");
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
             if (result.Failures.Count > 5) details += $"\n\n… et {result.Failures.Count - 5} autre(s).";
-            Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
+            await Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }
-        window.OfferToOpen(outputDir, $"{count} fichier(s) converti(s) dans {outputDir}.");
+        await window.OfferToOpen(outputDir, $"{count} fichier(s) converti(s) dans {outputDir}.");
     }
 }

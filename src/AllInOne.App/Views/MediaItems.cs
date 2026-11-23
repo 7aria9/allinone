@@ -47,8 +47,9 @@ public sealed class MediaItem : Observable
         set
         {
             if (!Set(ref _state, value)) return;
-            Raise(nameof(ShowStatus));
-            Raise(nameof(ShowBar));
+            foreach (var name in new[] { nameof(ShowStatus), nameof(ShowBar), nameof(IsRunning), nameof(IsDone), nameof(IsFailed),
+                         nameof(StatusColumn), nameof(StatusColumnSpan), nameof(StatusMargin) })
+                Raise(name);
         }
     }
 
@@ -58,6 +59,14 @@ public sealed class MediaItem : Observable
 
     public bool ShowStatus => State != MediaState.Idle;
     public bool ShowBar => State is MediaState.Waiting or MediaState.Running;
+    public bool IsRunning => State == MediaState.Running;
+    public bool IsDone => State == MediaState.Done;
+    public bool IsFailed => State == MediaState.Failed;
+
+    // Sans barre (terminé, échec, arrêté), le texte d'état prend toute la largeur.
+    public int StatusColumn => ShowBar ? 1 : 0;
+    public int StatusColumnSpan => ShowBar ? 1 : 2;
+    public Avalonia.Thickness StatusMargin => ShowBar ? new(10, 0, 0, 0) : default;
 
     public void SetMedia(MediaInfo media)
     {
@@ -117,24 +126,23 @@ internal static class MediaItems
     }
 
     /// <summary>Lit les champs Début / Fin d'un extrait. Affiche un message et renvoie false si la saisie est invalide.</summary>
-    public static bool TryReadTrim(System.Windows.Controls.TextBox start, System.Windows.Controls.TextBox end, System.Windows.Window? owner,
-        out TimeSpan? from, out TimeSpan? to)
+    public static async Task<(bool Ok, TimeSpan? From, TimeSpan? To)> ReadTrimAsync(
+        Avalonia.Controls.TextBox start, Avalonia.Controls.TextBox end, Avalonia.Controls.Window? owner)
     {
-        to = null;
-        if (!Trim.TryParseTime(start.Text, out from) || !Trim.TryParseTime(end.Text, out to))
+        if (!Trim.TryParseTime(start.Text, out var from) || !Trim.TryParseTime(end.Text, out var to))
         {
-            Dialog.Show(owner, "Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes).", "AllInOne");
-            return false;
+            await Dialog.Show(owner, "Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes).", "AllInOne");
+            return (false, null, null);
         }
         try
         {
             Trim.Validate(from, to);
-            return true;
+            return (true, from, to);
         }
         catch (ArgumentException ex)
         {
-            Dialog.Show(owner, ex.Message, "AllInOne");
-            return false;
+            await Dialog.Show(owner, ex.Message, "AllInOne");
+            return (false, null, null);
         }
     }
 

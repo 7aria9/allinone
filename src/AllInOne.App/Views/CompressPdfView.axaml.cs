@@ -1,7 +1,7 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core.Pdf;
 using AllInOne.Core.Video;
 
@@ -15,7 +15,7 @@ public partial class CompressPdfView : UserControl, IMediaListView
     {
         InitializeComponent();
         Files.ItemsSource = _items;
-        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _items.CollectionChanged += (_, _) => EmptyHint.IsVisible = _items.Count == 0;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
     }
 
@@ -57,27 +57,27 @@ public partial class CompressPdfView : UserControl, IMediaListView
         }
     }
 
-    private void Add_Click(object sender, RoutedEventArgs e) =>
-        AddFiles(Dialogs.OpenFiles(Dialogs.PdfFilter, "Choisir des PDF à compresser"), _items.Count);
+    private async void Add_Click(object? sender, RoutedEventArgs e) =>
+        AddFiles((await Dialogs.OpenFiles(this, "Choisir des PDF à compresser", true, Dialogs.Pdf)), _items.Count);
 
-    private void Remove_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
-    private void Clear_Click(object sender, RoutedEventArgs e) => _items.Clear();
+    private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
+    private void Clear_Click(object? sender, RoutedEventArgs e) => _items.Clear();
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les PDF compressés", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les PDF compressés", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private async void Compress_Click(object sender, RoutedEventArgs e)
+    private async void Compress_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
-        if (_items.Count == 0) { Dialog.Show(owner, "Ajoutez au moins un PDF.", "AllInOne"); return; }
+        var owner = MainWindow.Of(this);
+        if (_items.Count == 0) { await Dialog.Show(owner, "Ajoutez au moins un PDF.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
         if (_items.Any(i => string.Equals(Path.GetFullPath(i.Folder), Path.GetFullPath(outputDir), StringComparison.OrdinalIgnoreCase)))
         {
-            Dialog.Show(owner, "Choisissez un dossier de sortie différent de celui des originaux, pour ne pas les écraser.", "AllInOne");
+            await Dialog.Show(owner, "Choisissez un dossier de sortie différent de celui des originaux, pour ne pas les écraser.", "AllInOne");
             return;
         }
 
@@ -105,12 +105,12 @@ public partial class CompressPdfView : UserControl, IMediaListView
         if (result.Failures.Count > 0)
         {
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
-            Dialog.Show(owner, $"{result.Failures.Count} PDF n'ont pas pu être compressés :\n\n{details}", "AllInOne",
+            await Dialog.Show(owner, $"{result.Failures.Count} PDF n'ont pas pu être compressés :\n\n{details}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }
         var saved = before == 0 ? 0 : 1 - (double)after / before;
         window.SetStatus($"{count} PDF compressé(s) : {MediaInfo.FormatSize(before)} → {MediaInfo.FormatSize(after)} (−{saved:0 %}).");
-        window.OfferToOpen(outputDir, $"{count} PDF compressé(s) dans {outputDir}.\nTaille totale : {MediaInfo.FormatSize(before)} → {MediaInfo.FormatSize(after)}.");
+        await window.OfferToOpen(outputDir, $"{count} PDF compressé(s) dans {outputDir}.\nTaille totale : {MediaInfo.FormatSize(before)} → {MediaInfo.FormatSize(after)}.");
     }
 }

@@ -1,15 +1,13 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
-using System.Windows.Controls;
 using AllInOne.Core.Video;
 
 namespace AllInOne.App.Views;
 
 public partial class ConvertVideosView : UserControl, IMediaListView
 {
-    private static readonly string VideoFilter =
-        "Vidéos|" + string.Join(";", VideoFormats.InputExtensions.Select(e => "*" + e)) + "|Tous les fichiers|*.*";
 
     private readonly ObservableCollection<MediaItem> _items = new();
 
@@ -17,9 +15,9 @@ public partial class ConvertVideosView : UserControl, IMediaListView
     {
         InitializeComponent();
         Files.ItemsSource = _items;
-        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _items.CollectionChanged += (_, _) => EmptyHint.IsVisible = _items.Count == 0;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
-        IsVisibleChanged += (_, _) => { if (IsVisible) RefreshFfmpegStatus(); };
+        PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty && IsVisible) RefreshFfmpegStatus(); };
         Loaded += (_, _) => RefreshFfmpegStatus();
     }
 
@@ -46,21 +44,21 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format vidéo non reconnu.");
     }
 
-    private void Add_Click(object sender, RoutedEventArgs e) =>
-        AddFiles(Dialogs.OpenFiles(VideoFilter, "Choisir des vidéos"), _items.Count);
+    private async void Add_Click(object? sender, RoutedEventArgs e) =>
+        AddFiles(await Dialogs.OpenFiles(this, "Choisir des vidéos", true, Dialogs.Type("Vidéos", VideoFormats.InputExtensions)), _items.Count);
 
-    private void Remove_Click(object sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
-    private void Clear_Click(object sender, RoutedEventArgs e) => _items.Clear();
+    private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
+    private void Clear_Click(object? sender, RoutedEventArgs e) => _items.Clear();
 
-    private string SelectedTag => (string)((ComboBoxItem)Format.SelectedItem).Tag;
+    private string SelectedTag => (string)((ComboBoxItem)Format.SelectedItem!).Tag!;
 
     /// <summary>Extraction des images (PNG ou JPEG) au lieu d'une conversion vidéo.</summary>
     private bool ExtractFrames => SelectedTag.StartsWith("Frames", StringComparison.Ordinal);
 
     private VideoFormat SelectedFormat => ExtractFrames ? VideoFormat.Mp4 : Enum.Parse<VideoFormat>(SelectedTag);
 
-    private void Copy_Changed(object sender, RoutedEventArgs e) => UpdateOptions();
-    private void Format_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateOptions();
+    private void Copy_Changed(object? sender, RoutedEventArgs e) => UpdateOptions();
+    private void Format_SelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateOptions();
 
     /// <summary>Le GIF n'a pas de son et se réencode toujours ; la copie des flux ignore qualité et résolution.</summary>
     private void UpdateOptions()
@@ -72,29 +70,30 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         var reencode = gif || frames || CopyStreams.IsChecked != true;
         Resolution.IsEnabled = reencode;
         Quality.IsEnabled = reencode && SelectedTag != "FramesPng";
-        FrameRate.Visibility = FrameRateLabel.Visibility = frames ? Visibility.Visible : Visibility.Collapsed;
+        FrameRate.IsVisible = FrameRateLabel.IsVisible = frames;
     }
 
-    private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+    private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = Dialogs.PickFolder("Dossier où enregistrer les vidéos converties", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les vidéos converties", OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private async void Download_Click(object sender, RoutedEventArgs e)
+    private async void Download_Click(object? sender, RoutedEventArgs e)
     {
         await FfmpegSetup.DownloadAsync(this);
         RefreshFfmpegStatus();
     }
 
-    private async void Convert_Click(object sender, RoutedEventArgs e)
+    private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
-        var owner = Window.GetWindow(this);
-        if (_items.Count == 0) { Dialog.Show(owner, "Ajoutez au moins une vidéo.", "AllInOne"); return; }
+        var owner = MainWindow.Of(this);
+        if (_items.Count == 0) { await Dialog.Show(owner, "Ajoutez au moins une vidéo.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
-        if (!MediaItems.TryReadTrim(TrimStart, TrimEnd, owner, out var trimStart, out var trimEnd)) return;
+        var (trimOk, trimStart, trimEnd) = await MediaItems.ReadTrimAsync(TrimStart, TrimEnd, owner);
+        if (!trimOk) return;
 
         var ready = await FfmpegSetup.EnsureAsync(this);
         RefreshFfmpegStatus();
@@ -132,16 +131,16 @@ public partial class ConvertVideosView : UserControl, IMediaListView
             window.SetStatus($"{count} fichier(s) converti(s), {result.Failures.Count} en échec.");
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
             if (result.Failures.Count > 5) details += $"\n\n… et {result.Failures.Count - 5} autre(s).";
-            Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
+            await Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }
-        window.OfferToOpen(outputDir, $"{count} vidéo(s) convertie(s) dans {outputDir}.");
+        await window.OfferToOpen(outputDir, $"{count} vidéo(s) convertie(s) dans {outputDir}.");
     }
 
     private async Task ExtractFramesAsync(string outputDir, TimeSpan? trimStart, TimeSpan? trimEnd)
     {
-        var owner = Window.GetWindow(this);
+        var owner = MainWindow.Of(this);
         var height = int.Parse((string)((ComboBoxItem)Resolution.SelectedItem).Tag);
         var rate = double.Parse((string)((ComboBoxItem)FrameRate.SelectedItem).Tag, System.Globalization.CultureInfo.InvariantCulture);
         var quality = Enum.Parse<VideoQuality>((string)((ComboBoxItem)Quality.SelectedItem).Tag);
@@ -156,7 +155,7 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         };
 
         var estimate = _items.Sum(i => i.Media is { } m ? VideoFrames.EstimateCount(m, options) : 0);
-        if (estimate > 3000 && Dialog.Show(owner,
+        if (estimate > 3000 && await Dialog.Show(owner,
                 $"Cela va créer environ {estimate:N0} images.\n\nContinuer ? Tu peux en garder moins avec « 1 image par seconde » ou en choisissant un passage.",
                 "Beaucoup d'images", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
@@ -182,11 +181,11 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         if (result.Failures.Count > 0)
         {
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
-            Dialog.Show(owner, $"{result.Failures.Count} vidéo(s) n'ont pas pu être traitées :\n\n{details}", "AllInOne",
+            await Dialog.Show(owner, $"{result.Failures.Count} vidéo(s) n'ont pas pu être traitées :\n\n{details}", "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (result.Written.Count == 0) return;
         }
         window.SetStatus($"{total} image(s) extraite(s) de {result.Written.Count} vidéo(s).");
-        window.OfferToOpen(outputDir, $"{total} image(s) extraite(s) dans {outputDir}.");
+        await window.OfferToOpen(outputDir, $"{total} image(s) extraite(s) dans {outputDir}.");
     }
 }
