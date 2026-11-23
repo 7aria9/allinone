@@ -194,7 +194,8 @@ public static class PdfComposer
     private static MemoryStream EncodeForPdf(MagickImage image, int jpegQuality)
     {
         var ms = new MemoryStream();
-        var keepJpeg = image.Format is MagickFormat.Jpeg or MagickFormat.Jpg;
+        // Les photos déjà compressées avec perte (JPEG, HEIC d'iPhone, AVIF) restent en JPEG : un PNG serait bien plus lourd.
+        var keepJpeg = image.Format is MagickFormat.Jpeg or MagickFormat.Jpg or MagickFormat.Heic or MagickFormat.Heif or MagickFormat.Avif;
         image.Strip();
         if (keepJpeg && !image.HasAlpha)
         {

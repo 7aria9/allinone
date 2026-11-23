@@ -9,7 +9,7 @@ namespace AllInOne.Core.Video;
 internal static partial class FfmpegRunner
 {
     public static async Task RunAsync(string ffmpegPath, IReadOnlyList<string> arguments, string inputPath, string outputPath,
-        IProgress<double>? progress, CancellationToken cancellationToken)
+        IProgress<double>? progress, CancellationToken cancellationToken, TimeSpan? trimStart = null, TimeSpan? trimEnd = null)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -37,7 +37,10 @@ internal static partial class FfmpegRunner
                 if (errorLog.Length < 200_000) errorLog.AppendLine(e.Data);
             }
             if (duration is null && DurationRegex().Match(e.Data) is { Success: true } m)
-                duration = TimeSpan.ParseExact(m.Groups[1].Value, @"hh\:mm\:ss\.ff", CultureInfo.InvariantCulture).TotalSeconds;
+            {
+                var full = TimeSpan.ParseExact(m.Groups[1].Value, @"hh\:mm\:ss\.ff", CultureInfo.InvariantCulture).TotalSeconds;
+                duration = Trim.EffectiveSeconds(full, trimStart, trimEnd);
+            }
         };
         process.OutputDataReceived += (_, e) =>
         {

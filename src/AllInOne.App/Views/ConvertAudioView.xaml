@@ -17,7 +17,7 @@
 
         <TextBlock Grid.ColumnSpan="2" Text="Convertir des sons" Style="{StaticResource PageTitle}" />
         <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Hint}"
-                   Text="Convertis tes fichiers audio en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A. Tu peux aussi y déposer des vidéos pour en extraire le son. Les originaux ne sont jamais modifiés." />
+                   Text="Convertis tes fichiers audio en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A. Tu peux garder seulement un extrait, ou déposer des vidéos pour en extraire le son. Les originaux ne sont jamais modifiés." />
 
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,16,0">
             <DockPanel>
@@ -43,7 +43,8 @@
             </DockPanel>
         </Border>
 
-        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource Card}" VerticalAlignment="Top">
+        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource Card}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <TextBlock Text="SORTIE" Style="{StaticResource SectionTitle}" />
                 <Grid>
@@ -94,6 +95,22 @@
                     </ComboBox>
                 </Grid>
 
+                <TextBlock Text="EXTRAIT (FACULTATIF)" Style="{StaticResource SectionTitle}" Margin="0,18,0,10" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Début" />
+                    <TextBox Grid.Column="1" x:Name="TrimStart" Margin="0,0,14,8" ToolTip="Par exemple 1:30 ou 0:01:30,5 (vide = depuis le début)" />
+                    <Label Grid.Column="2" Content="Fin" />
+                    <TextBox Grid.Column="3" x:Name="TrimEnd" Margin="0,0,0,8" ToolTip="Par exemple 2:45 (vide = jusqu'à la fin)" />
+                </Grid>
+                <TextBlock Foreground="{StaticResource TextDim}" FontSize="12" TextWrapping="Wrap"
+                           Text="Garde seulement le passage choisi, par exemple de 1:30 à 2:45. Laisse vide pour tout garder. S'applique à chaque fichier de la liste." />
+
                 <TextBlock Text="DESTINATION" Style="{StaticResource SectionTitle}" Margin="0,18,0,10" />
                 <DockPanel Margin="0,0,0,18">
                     <Button DockPanel.Dock="Right" Content="Parcourir…" Click="BrowseOutput_Click" Margin="8,0,0,0" />
@@ -103,6 +120,7 @@
                 <Button Content="🎵  Convertir" Style="{StaticResource PrimaryButton}" Click="Convert_Click"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="14,10" FontSize="14" />
             </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

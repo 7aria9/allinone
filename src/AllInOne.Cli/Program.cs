@@ -23,13 +23,16 @@ public static class Program
           move       <entrée.pdf> <de> <vers>          [-o sortie.pdf]
           insert     <entrée.pdf> <position> <fichier...> [-o sortie.pdf] insère avant la page <position>
           rotate     <entrée.pdf> <pages> <90|180|270|-90> [-o sortie.pdf]
-          split      <entrée.pdf> <dossier>
+          split      <entrée.pdf> <dossier> [--every N | --ranges "1-3,4-7,8-"]   (par défaut : une page par fichier)
+          compress   <entrée.pdf> <sortie.pdf> [--level legere|moyenne|forte]
           pdf2img    <entrée.pdf> <dossier> [--format png|jpg|bmp|gif|tiff|webp] [--dpi 150] [--pages 1-3] [--quality 90]
-          convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp [--quality 90] [--max-width px] [--max-height px]
-          video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov [--quality haute|moyenne|faible]
-                     [--max-height 720] [--no-audio] [--copy]   (nécessite FFmpeg dans le PATH)
+          convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp|avif [--quality 90] [--max-width px] [--max-height px]
+          video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov|gif [--quality haute|moyenne|faible]
+                     [--max-height 720] [--no-audio] [--copy] [--start 1:30] [--end 2:45]   (nécessite FFmpeg dans le PATH)
+          frames     <dossier> <vidéo...> [--format png|jpg] [--fps 1] [--start 0:10] [--end 0:20] [--quality 90]
+                     [--max-height 720]   extrait les images (toutes par défaut) dans <dossier>/<nom>_images
           audio      <dossier> <son|vidéo...> --format mp3|wav|aiff|flac|ogg|opus|m4a [--quality haute|moyenne|faible]
-                     [--rate 44100] [--channels 1|2]   (nécessite FFmpeg dans le PATH)
+                     [--rate 44100] [--channels 1|2] [--start 0:30] [--end 1:00]   (nécessite FFmpeg dans le PATH)
           info       <entrée.pdf>
         """;
 
@@ -130,8 +133,26 @@ public static class Program
             case "split":
             {
                 a.Require(2, "split <entrée.pdf> <dossier>");
-                var files = PdfTools.SplitPages(a.Positional[0], a.Positional[1]);
+                var files = a.Get("ranges") is { } ranges ? PdfTools.SplitByRanges(a.Positional[0], a.Positional[1], ranges)
+                    : a.Get("every") is { } every ? PdfTools.SplitEvery(a.Positional[0], a.Positional[1], Int(every))
+                    : PdfTools.SplitPages(a.Positional[0], a.Positional[1]);
                 Console.WriteLine($"{files.Count} fichier(s) créé(s) dans {a.Positional[1]}");
+                break;
+            }
+            case "compress":
+            {
+                a.Require(2, "compress <entrée.pdf> <sortie.pdf>");
+                var level = (a.Get("level") ?? "moyenne").Trim().ToLowerInvariant() switch
+                {
+                    "legere" or "légère" or "light" => PdfCompressionLevel.Light,
+                    "forte" or "strong" => PdfCompressionLevel.Strong,
+                    "moyenne" or "medium" => PdfCompressionLevel.Medium,
+                    var other => throw new ArgumentException($"Niveau inconnu : {other} (legere, moyenne ou forte)"),
+                };
+                var r = PdfCompressor.Compress(a.Positional[0], a.Positional[1], level);
+                Console.WriteLine(r.KeptOriginal
+                    ? $"Déjà optimisé : copie identique écrite dans {a.Positional[1]}"
+                    : $"{MediaInfo.FormatSize(r.OriginalBytes)} → {MediaInfo.FormatSize(r.CompressedBytes)} (−{r.Saving:0 %}), {r.ImagesRecompressed} image(s) recompressée(s) : {a.Positional[1]}");
                 break;
             }
             case "pdf2img":
@@ -169,6 +190,8 @@ public static class Program
                     MaxHeight = a.Get("max-height") is { } h ? Int(h) : null,
                     RemoveAudio = a.Flag("no-audio"),
                     CopyStreams = a.Flag("copy"),
+                    Start = Time(a.Get("start")),
+                    End = Time(a.Get("end")),
                 };
                 var lastPercent = -1;
                 var progress = new Progress<double>(v =>
@@ -181,6 +204,26 @@ public static class Program
                 Console.WriteLine($"\r{files.Count} vidéo(s) convertie(s) dans {a.Positional[0]}");
                 break;
             }
+            case "frames":
+            {
+                a.Require(2, "frames <dossier> <vidéo...>");
+                var options = new FrameExtractionOptions
+                {
+                    Format = ImageFormats.Parse(a.Get("format") ?? "png"),
+                    FramesPerSecond = a.Get("fps") is { } f ? double.Parse(f.Replace(',', '.'), CultureInfo.InvariantCulture) : null,
+                    JpegQuality = Int(a.Get("quality") ?? "90"),
+                    MaxHeight = a.Get("max-height") is { } h ? Int(h) : null,
+                    Start = Time(a.Get("start")),
+                    End = Time(a.Get("end")),
+                };
+                foreach (var video in a.Positional.Skip(1))
+                {
+                    var folder = FileNames.UniqueDirectory(Path.Combine(a.Positional[0], Path.GetFileNameWithoutExtension(video) + "_images"));
+                    var files = VideoFrames.ExtractAsync(video, folder, options).GetAwaiter().GetResult();
+                    Console.WriteLine($"{files.Count} image(s) extraite(s) dans {folder}");
+                }
+                break;
+            }
             case "audio":
             {
                 a.Require(2, "audio <dossier> <fichier...> --format <format>");
@@ -190,6 +233,8 @@ public static class Program
                     Quality = VideoFormats.ParseQuality(a.Get("quality") ?? "haute"),
                     SampleRate = a.Get("rate") is { } r ? Int(r) : null,
                     Channels = a.Get("channels") is { } c ? Int(c) : null,
+                    Start = Time(a.Get("start")),
+                    End = Time(a.Get("end")),
                 };
                 var files = AudioConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options,
                     status: new Progress<string>(Console.WriteLine)).GetAwaiter().GetResult();
@@ -233,6 +278,9 @@ public static class Program
     private static string Output(Args a, string input) =>
         a.Get("output") ?? a.Get("o") ??
         Path.Combine(Path.GetDirectoryName(Path.GetFullPath(input))!, Path.GetFileNameWithoutExtension(input) + "_modifie.pdf");
+
+    private static TimeSpan? Time(string? text) =>
+        Trim.TryParseTime(text, out var t) ? t : throw new FormatException($"Temps invalide : « {text} » (exemples : 90, 1:30, 0:01:30)");
 
     private static int Int(string s) =>
         int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : throw new FormatException($"Nombre invalide : « {s} »");

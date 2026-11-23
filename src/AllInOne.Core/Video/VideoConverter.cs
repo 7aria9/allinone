@@ -17,7 +17,7 @@ public static class VideoConverter
             throw new InvalidOperationException("Le fichier de sortie doit être différent du fichier d'origine.");
 
         var args = FfmpegArguments.Build(inputPath, outputPath, format, options);
-        await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken);
+        await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken, options.Start, options.End);
     }
 
     /// <summary>Convertit plusieurs vidéos dans un dossier ; renvoie les fichiers créés.</summary>

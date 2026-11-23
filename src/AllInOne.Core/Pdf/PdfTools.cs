@@ -108,6 +108,57 @@ public static class PdfTools
         return files;
     }
 
+    /// <summary>Découpe un PDF en fichiers de <paramref name="pagesPerFile"/> pages (le dernier peut en avoir moins).</summary>
+    public static IReadOnlyList<string> SplitEvery(string inputPath, string outputDirectory, int pagesPerFile,
+        IProgress<double>? progress = null)
+    {
+        if (pagesPerFile < 1) throw new ArgumentOutOfRangeException(nameof(pagesPerFile), "Il faut au moins une page par fichier.");
+        var count = PdfInfo.GetPageCount(inputPath);
+        var groups = new List<IReadOnlyList<int>>();
+        for (var start = 0; start < count; start += pagesPerFile)
+            groups.Add(Enumerable.Range(start, Math.Min(pagesPerFile, count - start)).ToList());
+        return WriteGroups(inputPath, outputDirectory, groups, count, progress);
+    }
+
+    /// <summary>
+    /// Découpe un PDF selon des plages saisies : chaque partie séparée par une virgule ou un point-virgule
+    /// donne un fichier (« 1-3, 4-7, 8- » → trois fichiers).
+    /// </summary>
+    public static IReadOnlyList<string> SplitByRanges(string inputPath, string outputDirectory, string ranges,
+        IProgress<double>? progress = null)
+    {
+        var count = PdfInfo.GetPageCount(inputPath);
+        var groups = ranges.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(part => PageRange.Parse(part, count))
+            .Where(g => g.Count > 0)
+            .ToList();
+        if (groups.Count == 0) throw new ArgumentException("Indiquez au moins une plage de pages, par exemple « 1-3, 4-6 ».");
+        return WriteGroups(inputPath, outputDirectory, groups, count, progress);
+    }
+
+    private static IReadOnlyList<string> WriteGroups(string inputPath, string outputDirectory,
+        IReadOnlyList<IReadOnlyList<int>> groups, int pageCount, IProgress<double>? progress)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var name = Path.GetFileNameWithoutExtension(inputPath);
+        var digits = Math.Max(2, pageCount.ToString().Length);
+        string N(int index) => (index + 1).ToString().PadLeft(digits, '0');
+        var files = new List<string>();
+        for (var i = 0; i < groups.Count; i++)
+        {
+            var g = groups[i];
+            var first = g[0];
+            var last = g[^1];
+            var contiguous = g.Count == Math.Abs(last - first) + 1;
+            var suffix = g.Count == 1 ? $"_page{N(first)}" : contiguous ? $"_pages{N(first)}-{N(last)}" : $"_partie{i + 1}";
+            var target = FileNames.Unique(Path.Combine(outputDirectory, name + suffix + ".pdf"));
+            PdfComposer.Build(g.Select(p => PageSource.FromPdf(inputPath, p)).ToList(), target);
+            files.Add(target);
+            progress?.Report((i + 1) / (double)groups.Count);
+        }
+        return files;
+    }
+
     private static void CheckIndex(int index, int count)
     {
         if (index < 0 || index >= count)
