@@ -46,7 +46,7 @@ else
   # « rcodesign verify » ne sait pas lire les signatures ad hoc (pas de CMS) : on affiche
   # simplement la signature des exécutables, ce qui échoue s'ils n'en ont pas.
   for exe in LocalConvert localconvert-cli; do
-    rcodesign print-signature-info "$app/Contents/MacOS/$exe" | head -20
+    rcodesign print-signature-info "$app/Contents/MacOS/$exe" > /dev/null && echo "$exe : signature présente"
   done
 fi
 
