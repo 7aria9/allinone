@@ -2,18 +2,22 @@ namespace AllInOne.Core.Video;
 
 /// <summary>
 /// Trouve l'exécutable FFmpeg. FFmpeg n'est pas inclus dans l'application (taille et licence) : il est cherché
-/// à côté du programme, puis dans le dossier où AllInOne le télécharge, puis dans le PATH.
+/// à côté du programme, puis dans le dossier où LocalConvert le télécharge, puis dans le PATH.
 /// </summary>
 public static class FfmpegLocator
 {
     public static string ExecutableName => OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
 
-    /// <summary>Dossier où <see cref="FfmpegDownloader"/> installe FFmpeg (%LOCALAPPDATA%\AllInOne\ffmpeg).</summary>
+    /// <summary>Dossier où <see cref="FfmpegDownloader"/> installe FFmpeg (%LOCALAPPDATA%\LocalConvert\ffmpeg).</summary>
     public static string ManagedDirectory =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LocalConvert", "ffmpeg");
+
+    /// <summary>Dossier de téléchargement des versions qui s'appelaient encore AllInOne : réutilisé pour ne pas retélécharger FFmpeg.</summary>
+    private static string LegacyDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AllInOne", "ffmpeg");
 
-    /// <summary>Chemin forcé (variable d'environnement ALLINONE_FFMPEG), utile pour les tests ou une installation personnalisée.</summary>
-    public const string EnvironmentVariable = "ALLINONE_FFMPEG";
+    /// <summary>Chemin forcé (variable d'environnement LOCALCONVERT_FFMPEG), utile pour les tests ou une installation personnalisée.</summary>
+    public const string EnvironmentVariable = "LOCALCONVERT_FFMPEG";
 
     /// <summary>
     /// ffprobe livré avec FFmpeg : cherché à côté de <paramref name="ffmpegPath"/>, puis dans le PATH.
@@ -30,10 +34,10 @@ public static class FfmpegLocator
 
     public static string? Find()
     {
-        var forced = Environment.GetEnvironmentVariable(EnvironmentVariable);
+        var forced = Environment.GetEnvironmentVariable(EnvironmentVariable) ?? Environment.GetEnvironmentVariable("ALLINONE_FFMPEG");
         if (!string.IsNullOrWhiteSpace(forced) && File.Exists(forced)) return forced;
 
-        foreach (var dir in new[] { AppContext.BaseDirectory, ManagedDirectory })
+        foreach (var dir in new[] { AppContext.BaseDirectory, ManagedDirectory, LegacyDirectory })
         {
             var candidate = Path.Combine(dir, ExecutableName);
             if (File.Exists(candidate)) return candidate;

@@ -14,7 +14,7 @@ public static class FfmpegDownloader
 
     public static bool IsSupportedPlatform => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem;
 
-    /// <summary>Comment installer FFmpeg là où AllInOne ne le télécharge pas lui-même (macOS, Linux).</summary>
+    /// <summary>Comment installer FFmpeg là où LocalConvert ne le télécharge pas lui-même (macOS, Linux).</summary>
     public static string InstallHint =>
         OperatingSystem.IsMacOS()
             ? L.T("Installe-le avec Homebrew (https://brew.sh) : ouvre le Terminal et tape « brew install ffmpeg », puis reviens ici.")
@@ -34,7 +34,7 @@ public static class FfmpegDownloader
         {
             using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(30) })
             {
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("AllInOne");
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("LocalConvert");
                 using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var total = response.Content.Headers.ContentLength;

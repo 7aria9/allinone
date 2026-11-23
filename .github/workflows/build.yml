@@ -51,7 +51,7 @@ jobs:
         run: ./.github/scripts/smoke-test.ps1 -Folders publish/leger, publish/autonome
       - uses: actions/upload-artifact@v4
         with:
-          name: AllInOne-win-x64
+          name: LocalConvert-win-x64
           path: publish/leger/
 
   macos-app:
@@ -69,14 +69,14 @@ jobs:
             dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
             dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -o publish/$rid
             mkdir -p dist/$rid
-            ./.github/scripts/package-macos.sh publish/$rid 0.0.0 dist/$rid/AllInOne-$rid.zip
+            ./.github/scripts/package-macos.sh publish/$rid 0.0.0 dist/$rid/LocalConvert-$rid.zip
           done
       - name: Test de démarrage (Apple Silicon)
-        run: ./.github/scripts/smoke-test.sh dist/osx-arm64/AllInOne.app/Contents/MacOS screenshots
+        run: ./.github/scripts/smoke-test.sh dist/osx-arm64/LocalConvert.app/Contents/MacOS screenshots
       - name: Test de démarrage (Intel, via Rosetta si disponible)
         run: |
           if arch -x86_64 /usr/bin/true 2>/dev/null; then
-            ./.github/scripts/smoke-test.sh dist/osx-x64/AllInOne.app/Contents/MacOS
+            ./.github/scripts/smoke-test.sh dist/osx-x64/LocalConvert.app/Contents/MacOS
           else
             echo "Rosetta absent sur ce runner : version Intel compilée mais pas lancée."
           fi

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Range une publication macOS dans AllInOne.app, la signe « ad hoc » (sans compte développeur Apple)
+# Range une publication macOS dans LocalConvert.app, la signe « ad hoc » (sans compte développeur Apple)
 # et en fait un zip qui conserve les droits d'exécution et les liens.
 # Usage : package-macos.sh <dossier publié> <version> <zip de sortie>
 set -euo pipefail
@@ -7,21 +7,21 @@ publish="$1"
 version="$2"
 zip="$3"
 
-app="$(dirname "$zip")/AllInOne.app"
+app="$(dirname "$zip")/LocalConvert.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp -R "$publish"/. "$app/Contents/MacOS/"
-chmod +x "$app/Contents/MacOS/AllInOne" "$app/Contents/MacOS/allinone-cli"
+chmod +x "$app/Contents/MacOS/LocalConvert" "$app/Contents/MacOS/localconvert-cli"
 
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>AllInOne</string>
-  <key>CFBundleDisplayName</key><string>AllInOne</string>
-  <key>CFBundleIdentifier</key><string>io.github.allinone</string>
-  <key>CFBundleExecutable</key><string>AllInOne</string>
+  <key>CFBundleName</key><string>LocalConvert</string>
+  <key>CFBundleDisplayName</key><string>LocalConvert</string>
+  <key>CFBundleIdentifier</key><string>io.github.localconvert</string>
+  <key>CFBundleExecutable</key><string>LocalConvert</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$version</string>
   <key>CFBundleVersion</key><string>$version</string>

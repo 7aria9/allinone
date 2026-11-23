@@ -22,12 +22,17 @@ public partial class CompressPdfView : UserControl, IMediaListView
 
     void IMediaListView.AddSmokeTestSamples()
     {
-        foreach (var state in Enum.GetValues<MediaState>())
+        string[] names = ["signed-contract.pdf", "annual-report.pdf", "invoices-2025.pdf", "brochure.pdf", "lecture-notes.pdf", "site-photos.pdf"];
+        var states = Enum.GetValues<MediaState>();
+        for (var i = 0; i < states.Length; i++)
         {
-            var item = new MediaItem(Environment.ProcessPath ?? "exemple.pdf", "📄");
-            item.SetInfoText("12 pages · 8,4 Mo");
-            item.Reset(state);
-            item.StatusText = state.ToString();
+            var item = new MediaItem(Path.Combine(Path.GetTempPath(), names[i % names.Length]), "📄");
+            item.SetInfoText(L.T("{0} page(s) · {1}", 12, MediaInfo.FormatSize(8_800_000)));
+            item.Reset(states[i]);
+            item.Progress = 0.42;
+            item.StatusText = states[i] == MediaState.Done
+                ? $"✓ {MediaInfo.FormatSize(8_800_000)} → {MediaInfo.FormatSize(1_900_000)} (−78 %)"
+                : MediaItems.SampleStatus(states[i]);
             _items.Add(item);
         }
     }
@@ -73,12 +78,12 @@ public partial class CompressPdfView : UserControl, IMediaListView
     private async void Compress_Click(object? sender, RoutedEventArgs e)
     {
         var owner = MainWindow.Of(this);
-        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins un PDF."), "AllInOne"); return; }
+        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins un PDF."), "LocalConvert"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "LocalConvert"); return; }
         if (_items.Any(i => string.Equals(Path.GetFullPath(i.Folder), Path.GetFullPath(outputDir), StringComparison.OrdinalIgnoreCase)))
         {
-            await Dialog.Show(owner, L.T("Choisissez un dossier de sortie différent de celui des originaux, pour ne pas les écraser."), "AllInOne");
+            await Dialog.Show(owner, L.T("Choisissez un dossier de sortie différent de celui des originaux, pour ne pas les écraser."), "LocalConvert");
             return;
         }
 
@@ -106,7 +111,7 @@ public partial class CompressPdfView : UserControl, IMediaListView
         if (result.Failures.Count > 0)
         {
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
-            await Dialog.Show(owner, L.T("{0} PDF n'ont pas pu être compressés :\n\n{1}", result.Failures.Count, details), "AllInOne",
+            await Dialog.Show(owner, L.T("{0} PDF n'ont pas pu être compressés :\n\n{1}", result.Failures.Count, details), "LocalConvert",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }

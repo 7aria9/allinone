@@ -132,7 +132,7 @@ internal static class MediaItems
     {
         if (!Trim.TryParseTime(start.Text, out var from) || !Trim.TryParseTime(end.Text, out var to))
         {
-            await Dialog.Show(owner, L.T("Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes)."), "AllInOne");
+            await Dialog.Show(owner, L.T("Temps d'extrait invalide. Écris par exemple 1:30, 0:01:30 ou 90 (secondes)."), "LocalConvert");
             return (false, null, null);
         }
         try
@@ -142,31 +142,46 @@ internal static class MediaItems
         }
         catch (ArgumentException ex)
         {
-            await Dialog.Show(owner, ex.Message, "AllInOne");
+            await Dialog.Show(owner, ex.Message, "LocalConvert");
             return (false, null, null);
         }
     }
 
-    /// <summary>Lignes d'exemple, une par état, sans lancer FFmpeg.</summary>
+    /// <summary>Lignes d'exemple, une par état, sans lancer FFmpeg (test de démarrage et captures d'écran).</summary>
     public static IEnumerable<MediaItem> SmokeTestSamples(bool isVideo)
     {
-        var path = Environment.ProcessPath ?? "exemple";
+        var names = isVideo
+            ? new[] { "holiday-2025.mov", "birthday.mp4", "drone-beach.mkv", "presentation.avi", "editing-tutorial.webm", "concert.mp4" }
+            : new[] { "podcast-episode-12.wav", "interview.m4a", "summer-playlist.flac", "voice-memo.ogg", "conference.mp3", "live-album.aiff" };
         var info = new MediaInfo
         {
             Duration = TimeSpan.FromSeconds(205), Width = 1920, Height = 1080, VideoCodec = "h264", FrameRate = 30,
             AudioCodec = "aac", SampleRate = 48000, Channels = 2, AudioBitRate = 128_000, SizeBytes = 13_000_000,
         };
-        foreach (var state in Enum.GetValues<MediaState>())
+        var states = Enum.GetValues<MediaState>();
+        for (var i = 0; i < states.Length; i++)
         {
-            var item = new MediaItem(path, isVideo);
+            var state = states[i];
+            var item = new MediaItem(Path.Combine(Path.GetTempPath(), names[i % names.Length]), isVideo);
             item.SetMedia(info);
             item.Reset(state);
             item.Progress = 0.42;
-            item.StatusText = state.ToString();
-            if (state == MediaState.Failed) item.Error = "Erreur d'exemple";
+            item.StatusText = SampleStatus(state);
+            if (state == MediaState.Failed) item.Error = item.StatusText;
             yield return item;
         }
     }
+
+    /// <summary>Texte d'état d'exemple pour une ligne dans l'état donné.</summary>
+    public static string SampleStatus(MediaState state) => state switch
+    {
+        MediaState.Waiting => L.T("En attente"),
+        MediaState.Running => "42 % · " + RemainingTime.Format(TimeSpan.FromSeconds(70)),
+        MediaState.Done => L.T("✓ Terminé en {0}", "0:48"),
+        MediaState.Failed => "✗ " + L.T("Échec : ") + "Invalid data found when processing input",
+        MediaState.Cancelled => L.T("Arrêté"),
+        _ => "",
+    };
 
     private static long? TryGetSize(string path)
     {
@@ -255,7 +270,7 @@ internal static class MediaItems
                 var message = ex is VideoConversionException ? ex.Message : $"{item.Name} : {ex.Message}";
                 item.State = MediaState.Failed;
                 var reason = message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
-                item.StatusText = L.T("✗ Échec") + (reason is null ? "" : " : " + reason);
+                item.StatusText = reason is null ? L.T("✗ Échec") : "✗ " + L.T("Échec : ") + reason;
                 item.Error = message;
                 failures.Add((item, message));
             }

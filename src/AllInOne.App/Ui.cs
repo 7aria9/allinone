@@ -163,7 +163,7 @@ public static class Thumbnails
 
 public static class ListTools
 {
-    private const string DragFormat = "application/x-allinone-items";
+    private const string DragFormat = "application/x-localconvert-items";
 
     private static List<T> Selected<T>(ListBox list) => (list.SelectedItems ?? new ArrayList()).Cast<T>().ToList();
 
