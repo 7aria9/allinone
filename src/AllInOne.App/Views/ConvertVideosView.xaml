@@ -38,7 +38,7 @@
                     <TextBlock x:Name="EmptyHint" Style="{StaticResource DropHint}"
                                Text="Dépose tes vidéos ici&#x0a;MP4, MKV, WebM, AVI, OGG, MOV, WMV, FLV, MPEG, TS, 3GP…" />
                     <ListBox x:Name="Files" SelectionMode="Extended"
-                             ItemTemplate="{StaticResource FileItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                             ItemTemplate="{StaticResource MediaItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
                 </Grid>
             </DockPanel>
         </Border>

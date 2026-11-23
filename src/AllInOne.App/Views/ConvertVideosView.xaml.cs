@@ -6,12 +6,12 @@ using AllInOne.Core.Video;
 
 namespace AllInOne.App.Views;
 
-public partial class ConvertVideosView : UserControl
+public partial class ConvertVideosView : UserControl, IMediaListView
 {
     private static readonly string VideoFilter =
         "Vidéos|" + string.Join(";", VideoFormats.InputExtensions.Select(e => "*" + e)) + "|Tous les fichiers|*.*";
 
-    private readonly ObservableCollection<FileItem> _items = new();
+    private readonly ObservableCollection<MediaItem> _items = new();
 
     public ConvertVideosView()
     {
@@ -20,16 +20,27 @@ public partial class ConvertVideosView : UserControl
         _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ListTools.EnableDragDrop(Files, _items, AddFiles);
         IsVisibleChanged += (_, _) => { if (IsVisible) RefreshFfmpegStatus(); };
+        Loaded += (_, _) => RefreshFfmpegStatus();
     }
 
-    private void RefreshFfmpegStatus() => FfmpegSetup.RefreshStatus(FfmpegStatus, DownloadButton);
+    void IMediaListView.AddSmokeTestSamples()
+    {
+        foreach (var item in MediaItems.SmokeTestSamples(isVideo: true)) _items.Add(item);
+    }
+
+    private void RefreshFfmpegStatus()
+    {
+        FfmpegSetup.RefreshStatus(FfmpegStatus, DownloadButton);
+        MediaItems.LoadInfo(_items); // par exemple juste après l'installation de FFmpeg
+    }
 
     private void AddFiles(string[] paths, int index)
     {
-        var added = paths.Where(VideoFormats.IsSupportedVideo).Select(p => new FileItem(p)).ToList();
+        var added = paths.Where(VideoFormats.IsSupportedVideo).Select(p => new MediaItem(p, isVideo: true)).ToList();
         var skipped = paths.Length - added.Count;
         index = Math.Clamp(index, 0, _items.Count);
         for (var i = 0; i < added.Count; i++) _items.Insert(index + i, added[i]);
+        MediaItems.LoadInfo(added);
         if (string.IsNullOrWhiteSpace(OutputDir.Text) && added.Count > 0)
             OutputDir.Text = Path.Combine(added[0].Folder, "converties");
         if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format vidéo non reconnu.");
@@ -79,13 +90,25 @@ public partial class ConvertVideosView : UserControl
             RemoveAudio = RemoveAudio.IsChecked == true,
             CopyStreams = CopyStreams.IsChecked == true,
         };
-        var paths = _items.Select(i => i.Path).ToList();
+        var items = _items.ToList();
         var window = MainWindow.Of(this);
-        var status = new Progress<string>(window.SetStatus);
-        var count = 0;
-        var ok = await window.RunBusyAsync($"Conversion de {paths.Count} vidéo(s)…",
-            async (p, ct) => count = (await Task.Run(() => VideoConverter.ConvertManyAsync(paths, outputDir, format, options, p, ct, status), ct)).Count,
+        MediaItems.Result? result = null;
+        var ok = await window.RunBusyAsync($"Conversion de {items.Count} vidéo(s)…",
+            async (p, ct) => result = await MediaItems.ConvertAsync(items, outputDir, format.Extension(),
+                (input, output, progress, token) => VideoConverter.ConvertAsync(input, output, format, options, progress, token),
+                p, window.SetStatus, Files.ScrollIntoView, ct),
             $"Vidéos converties dans {outputDir}", cancellable: true);
-        if (ok) window.OfferToOpen(outputDir, $"{count} vidéo(s) convertie(s) dans {outputDir}.");
+        if (!ok || result is null) return;
+        var count = result.Written.Count;
+        if (result.Failures.Count > 0)
+        {
+            window.SetStatus($"{count} fichier(s) converti(s), {result.Failures.Count} en échec.");
+            var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
+            if (result.Failures.Count > 5) details += $"\n\n… et {result.Failures.Count - 5} autre(s).";
+            Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (count == 0) return;
+        }
+        window.OfferToOpen(outputDir, $"{count} vidéo(s) convertie(s) dans {outputDir}.");
     }
 }

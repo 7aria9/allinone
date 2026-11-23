@@ -57,7 +57,8 @@ L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, 
 3. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
 4. **Convertir des images** : convertissez un lot d'images vers un autre format, avec largeur/hauteur maximales optionnelles.
 5. **Convertir des vidéos** : ajoutez ou glissez des vidéos, choisissez le format, la qualité et la résolution maximale. Un bouton « Arrêter » interrompt la conversion.
-6. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio.
+   Chaque ligne affiche les caractéristiques du fichier (durée, résolution, codecs, images/s, débit, taille) puis, pendant la conversion, sa propre barre de progression et le temps restant estimé. Un fichier en échec n'arrête pas les suivants.
+6. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio. Comme pour les vidéos, chaque ligne montre durée, codec, débit, fréquence, canaux et taille, puis l'avancement et le temps restant.
 
 ### FFmpeg (conversion vidéo et audio)
 

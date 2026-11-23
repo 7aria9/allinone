@@ -38,7 +38,7 @@
                     <TextBlock x:Name="EmptyHint" Style="{StaticResource DropHint}"
                                Text="Dépose tes sons ici&#x0a;MP3, WAV, AIFF, FLAC, OGG, Opus, M4A, WMA… ou des vidéos" />
                     <ListBox x:Name="Files" SelectionMode="Extended"
-                             ItemTemplate="{StaticResource FileItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                             ItemTemplate="{StaticResource MediaItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
                 </Grid>
             </DockPanel>
         </Border>
