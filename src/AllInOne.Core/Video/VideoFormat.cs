@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core.Video;
 
 /// <summary>Formats vidéo de sortie.</summary>
@@ -58,7 +59,7 @@ public static class VideoFormats
         "ogg" or "ogv" => VideoFormat.Ogg,
         "mov" => VideoFormat.Mov,
         "gif" => VideoFormat.Gif,
-        _ => throw new ArgumentException($"Format vidéo inconnu : {value}"),
+        _ => throw new ArgumentException(L.T("Format vidéo inconnu : {0}", value)),
     };
 
     public static VideoQuality ParseQuality(string value) => value.Trim().ToLowerInvariant() switch
@@ -66,7 +67,7 @@ public static class VideoFormats
         "high" or "haute" or "h" => VideoQuality.High,
         "medium" or "moyenne" or "m" => VideoQuality.Medium,
         "low" or "faible" or "basse" or "l" => VideoQuality.Low,
-        _ => throw new ArgumentException($"Qualité inconnue : {value} (haute, moyenne ou faible)"),
+        _ => throw new ArgumentException(L.T("Qualité inconnue : {0} (haute, moyenne ou faible)", value)),
     };
 }
 

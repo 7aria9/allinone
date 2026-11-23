@@ -10,6 +10,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
@@ -46,10 +47,10 @@ public sealed class FileItem : Observable
 /// <summary>Fenêtres de choix de fichiers et de dossiers (natives sous Windows, macOS et Linux).</summary>
 public static class Dialogs
 {
-    public static readonly FilePickerFileType Images = Type("Images", ImageFormats.InputExtensions);
-    public static readonly FilePickerFileType Pdf = Type("Documents PDF", new[] { ".pdf" });
-    public static readonly FilePickerFileType PdfOrImages = Type("PDF et images", ImageFormats.InputExtensions.Prepend(".pdf"));
-    public static readonly FilePickerFileType All = new("Tous les fichiers") { Patterns = new[] { "*" } };
+    public static FilePickerFileType Images => Type(L.T("Images"), ImageFormats.InputExtensions);
+    public static FilePickerFileType Pdf => Type(L.T("Documents PDF"), new[] { ".pdf" });
+    public static FilePickerFileType PdfOrImages => Type(L.T("PDF et images"), ImageFormats.InputExtensions.Prepend(".pdf"));
+    public static FilePickerFileType All => new(L.T("Tous les fichiers")) { Patterns = new[] { "*" } };
 
     /// <summary>Type de fichier à partir d'extensions ; majuscules comprises (les filtres sont sensibles à la casse sous Linux).</summary>
     public static FilePickerFileType Type(string name, IEnumerable<string> extensions)
@@ -79,7 +80,7 @@ public static class Dialogs
     {
         var file = await Storage(owner).SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Enregistrer le PDF",
+            Title = L.T("Enregistrer le PDF"),
             SuggestedFileName = suggestedName,
             DefaultExtension = "pdf",
             FileTypeChoices = new[] { Pdf },

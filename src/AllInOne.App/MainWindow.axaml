@@ -7,13 +7,17 @@
     <DockPanel>
         <!-- En-tête -->
         <Border DockPanel.Dock="Top" Background="{StaticResource HeaderGradient}" Padding="24,16,24,14">
-            <StackPanel>
+            <DockPanel>
+                <ComboBox x:Name="LanguageBox" DockPanel.Dock="Right" VerticalAlignment="Center" MinWidth="130"
+                          ToolTip.Tip="Langue de l'application" />
+                <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="ALL" FontSize="28" FontWeight="Black" />
                     <TextBlock Text="·IN·ONE" FontSize="28" FontWeight="Black" Foreground="{StaticResource AccentGradient}" />
                 </StackPanel>
                 <TextBlock Text="Tes PDF, images, vidéos et sons, sans rien envoyer sur Internet" Foreground="{StaticResource TextDim}" FontSize="13" />
-            </StackPanel>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- Barre d'état -->

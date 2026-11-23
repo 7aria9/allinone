@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
@@ -91,9 +92,9 @@ public static class Dialog
         switch (buttons)
         {
             case MessageBoxButton.OK: Add("OK", MessageBoxResult.OK, cancel: true); break;
-            case MessageBoxButton.OKCancel: Add("OK", MessageBoxResult.OK); Add("Annuler", MessageBoxResult.Cancel, true); break;
-            case MessageBoxButton.YesNo: Add("Oui", MessageBoxResult.Yes); Add("Non", MessageBoxResult.No, true); break;
-            default: Add("Oui", MessageBoxResult.Yes); Add("Non", MessageBoxResult.No); Add("Annuler", MessageBoxResult.Cancel, true); break;
+            case MessageBoxButton.OKCancel: Add("OK", MessageBoxResult.OK); Add(L.T("Annuler"), MessageBoxResult.Cancel, true); break;
+            case MessageBoxButton.YesNo: Add(L.T("Oui"), MessageBoxResult.Yes); Add(L.T("Non"), MessageBoxResult.No, true); break;
+            default: Add(L.T("Oui"), MessageBoxResult.Yes); Add(L.T("Non"), MessageBoxResult.No); Add(L.T("Annuler"), MessageBoxResult.Cancel, true); break;
         }
 
         var content = new StackPanel { Margin = new Thickness(24, 20, 24, 18), MinWidth = 340, MaxWidth = 560 };

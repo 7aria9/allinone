@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using AllInOne.Core;
 using AllInOne.Core.Pdf;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App.Views;
 
@@ -62,7 +63,7 @@ public partial class PdfEditorView : UserControl
         for (var i = 0; i < _pages.Count; i++) _pages[i].Number = i + 1;
         var files = _pages.Select(p => p.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count();
         EmptyHint.IsVisible = _pages.Count == 0;
-        Summary.Text = _pages.Count == 0 ? "Aucune page." : $"{_pages.Count} page(s) provenant de {files} fichier(s).";
+        Summary.Text = _pages.Count == 0 ? L.T("Aucune page.") : L.T("{0} page(s) provenant de {1} fichier(s).", _pages.Count, files);
         if (_pages.Count == 0) { _firstPdf = null; _pdfCache.Clear(); }
     }
 
@@ -71,7 +72,7 @@ public partial class PdfEditorView : UserControl
 
     private async void Add_Click(object? sender, RoutedEventArgs e)
     {
-        var files = (await Dialogs.OpenFiles(this, "Choisir des PDF ou des images", true, Dialogs.PdfOrImages));
+        var files = (await Dialogs.OpenFiles(this, L.T("Choisir des PDF ou des images"), true, Dialogs.PdfOrImages));
         if (files.Length > 0) await AddFilesAsync(files, InsertionIndex());
     }
 
@@ -81,12 +82,12 @@ public partial class PdfEditorView : UserControl
         if (supported.Length == 0) return;
         var window = MainWindow.Of(this);
         IReadOnlyList<PageSource> sources = Array.Empty<PageSource>();
-        var ok = await window.RunBusyAsync("Lecture des fichiers…", _ => Task.Run(() =>
+        var ok = await window.RunBusyAsync(L.T("Lecture des fichiers…"), _ => Task.Run(() =>
         {
             sources = PdfComposer.ExpandFiles(supported);
             foreach (var pdf in supported.Where(PdfComposer.IsPdf))
                 _pdfCache.TryAdd(Path.GetFullPath(pdf), File.ReadAllBytes(pdf));
-        }), $"{supported.Length} fichier(s) ajouté(s).");
+        }), L.T("{0} fichier(s) ajouté(s).", supported.Length));
         if (!ok) return;
 
         _firstPdf ??= supported.FirstOrDefault(PdfComposer.IsPdf);
@@ -154,7 +155,7 @@ public partial class PdfEditorView : UserControl
     {
         if (_pages.Count == 0)
         {
-            await Dialog.Show(MainWindow.Of(this), "Le document ne contient aucune page.", "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("Le document ne contient aucune page."), "AllInOne");
             return;
         }
 
@@ -168,9 +169,9 @@ public partial class PdfEditorView : UserControl
             PageSize = Enum.Parse<PageSizeMode>((string)((ComboBoxItem)ImagePageSize.SelectedItem).Tag),
         };
         var window = MainWindow.Of(this);
-        var ok = await window.RunBusyAsync("Enregistrement du PDF…",
+        var ok = await window.RunBusyAsync(L.T("Enregistrement du PDF…"),
             p => Task.Run(() => PdfComposer.Build(sources, output, options, p)),
-            $"PDF enregistré : {output}");
+            L.T("PDF enregistré : {0}", output));
         if (!ok) return;
 
         // Si un fichier source a été écrasé, les pages affichées n'y correspondent plus : on recharge le résultat.
@@ -180,6 +181,6 @@ public partial class PdfEditorView : UserControl
             _pages.Clear();
             await AddFilesAsync(new[] { output }, 0);
         }
-        await window.OfferToOpen(output, $"Le PDF a été enregistré ({sources.Count} page(s)).");
+        await window.OfferToOpen(output, L.T("Le PDF a été enregistré ({0} page(s)).", sources.Count));
     }
 }

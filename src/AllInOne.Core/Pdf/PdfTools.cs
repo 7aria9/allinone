@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core.Pdf;
 
 /// <summary>Opérations courantes sur les PDF. Les index de pages commencent à 0.</summary>
@@ -28,7 +29,7 @@ public static class PdfTools
         foreach (var p in remove) CheckIndex(p, count);
         var keep = Enumerable.Range(0, count).Where(i => !remove.Contains(i)).ToList();
         if (keep.Count == 0)
-            throw new InvalidOperationException("Impossible de supprimer toutes les pages du document.");
+            throw new InvalidOperationException(L.T("Impossible de supprimer toutes les pages du document."));
         PdfComposer.Build(keep.Select(i => PageSource.FromPdf(inputPath, i)), outputPath);
     }
 
@@ -49,7 +50,7 @@ public static class PdfTools
     {
         var count = PdfInfo.GetPageCount(inputPath);
         if (newOrder.Count != count || newOrder.Distinct().Count() != count || newOrder.Any(i => i < 0 || i >= count))
-            throw new ArgumentException($"Le nouvel ordre doit contenir chaque page de 1 à {count} exactement une fois.");
+            throw new ArgumentException(L.T("Le nouvel ordre doit contenir chaque page de 1 à {0} exactement une fois.", count));
         ExtractPages(inputPath, outputPath, newOrder);
     }
 
@@ -74,7 +75,7 @@ public static class PdfTools
     {
         var count = PdfInfo.GetPageCount(inputPath);
         if (position < 0 || position > count)
-            throw new ArgumentOutOfRangeException(null, $"La position doit être comprise entre 1 et {count + 1}.");
+            throw new ArgumentOutOfRangeException(null, L.T("La position doit être comprise entre 1 et {0}.", count + 1));
         var pages = Enumerable.Range(0, count).Select(i => PageSource.FromPdf(inputPath, i)).ToList();
         pages.InsertRange(position, PdfComposer.ExpandFiles(filesToInsert, imageOptions));
         PdfComposer.Build(pages, outputPath, imageOptions);
@@ -112,7 +113,7 @@ public static class PdfTools
     public static IReadOnlyList<string> SplitEvery(string inputPath, string outputDirectory, int pagesPerFile,
         IProgress<double>? progress = null)
     {
-        if (pagesPerFile < 1) throw new ArgumentOutOfRangeException(nameof(pagesPerFile), "Il faut au moins une page par fichier.");
+        if (pagesPerFile < 1) throw new ArgumentOutOfRangeException(nameof(pagesPerFile), L.T("Il faut au moins une page par fichier."));
         var count = PdfInfo.GetPageCount(inputPath);
         var groups = new List<IReadOnlyList<int>>();
         for (var start = 0; start < count; start += pagesPerFile)
@@ -132,7 +133,7 @@ public static class PdfTools
             .Select(part => PageRange.Parse(part, count))
             .Where(g => g.Count > 0)
             .ToList();
-        if (groups.Count == 0) throw new ArgumentException("Indiquez au moins une plage de pages, par exemple « 1-3, 4-6 ».");
+        if (groups.Count == 0) throw new ArgumentException(L.T("Indiquez au moins une plage de pages, par exemple « 1-3, 4-6 »."));
         return WriteGroups(inputPath, outputDirectory, groups, count, progress);
     }
 
@@ -162,6 +163,6 @@ public static class PdfTools
     private static void CheckIndex(int index, int count)
     {
         if (index < 0 || index >= count)
-            throw new ArgumentOutOfRangeException(null, $"La page {index + 1} n'existe pas (le document a {count} page(s)).");
+            throw new ArgumentOutOfRangeException(null, L.T("La page {0} n'existe pas (le document a {1} page(s)).", index + 1, count));
     }
 }

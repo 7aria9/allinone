@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core;
 
 /// <summary>
@@ -46,9 +47,9 @@ public static class PageRange
     private static int ParseNumber(string s, int pageCount)
     {
         if (!int.TryParse(s, out var n))
-            throw new FormatException($"Numéro de page invalide : « {s} »");
+            throw new FormatException(L.T("Numéro de page invalide : « {0} »", s));
         if (n < 1 || n > pageCount)
-            throw new ArgumentOutOfRangeException(null, $"La page {n} n'existe pas (le document a {pageCount} page(s)).");
+            throw new ArgumentOutOfRangeException(null, L.T("La page {0} n'existe pas (le document a {1} page(s)).", n, pageCount));
         return n;
     }
 }

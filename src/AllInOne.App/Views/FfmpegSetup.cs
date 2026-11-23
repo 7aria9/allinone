@@ -1,6 +1,7 @@
 using AllInOne.Core.Video;
 using Avalonia;
 using Avalonia.Controls;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App.Views;
 
@@ -15,21 +16,21 @@ internal static class FfmpegSetup
         var path = FfmpegLocator.Find();
         if (path is not null)
         {
-            status.Text = $"✓ FFmpeg prêt : {path}";
+            status.Text = L.T("✓ FFmpeg prêt : {0}", path);
             downloadButton.IsVisible = false;
             return;
         }
         status.Text = FfmpegDownloader.IsSupportedPlatform
-            ? "FFmpeg n'est pas encore installé. Il sera téléchargé à la première conversion (environ 200 Mo, une seule fois)."
-            : "FFmpeg n'est pas installé. " + FfmpegDownloader.InstallHint;
+            ? L.T("FFmpeg n'est pas encore installé. Il sera téléchargé à la première conversion (environ 200 Mo, une seule fois).")
+            : L.T("FFmpeg n'est pas installé. ") + FfmpegDownloader.InstallHint;
         downloadButton.IsVisible = FfmpegDownloader.IsSupportedPlatform;
     }
 
     public static async Task<bool> DownloadAsync(Visual view)
     {
         var window = MainWindow.Of(view);
-        var ok = await window.RunBusyAsync("Téléchargement de FFmpeg (environ 200 Mo)…",
-            (p, ct) => FfmpegDownloader.DownloadAsync(p, ct), "FFmpeg est installé.", cancellable: true);
+        var ok = await window.RunBusyAsync(L.T("Téléchargement de FFmpeg (environ 200 Mo)…"),
+            (p, ct) => FfmpegDownloader.DownloadAsync(p, ct), L.T("FFmpeg est installé."), cancellable: true);
         return ok && FfmpegLocator.Find() is not null;
     }
 
@@ -40,13 +41,13 @@ internal static class FfmpegSetup
         var owner = MainWindow.Of(view);
         if (!FfmpegDownloader.IsSupportedPlatform)
         {
-            await Dialog.Show(owner, "La conversion utilise FFmpeg, un logiciel libre séparé, qui n'est pas encore installé.\n\n" +
-                                     FfmpegDownloader.InstallHint, "Installer FFmpeg", MessageBoxButton.OK, MessageBoxImage.Information);
+            await Dialog.Show(owner, L.T("La conversion utilise FFmpeg, un logiciel libre séparé, qui n'est pas encore installé.\n\n") +
+                                     FfmpegDownloader.InstallHint, L.T("Installer FFmpeg"), MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
         var answer = await Dialog.Show(owner,
-            "La conversion utilise FFmpeg, un logiciel libre séparé.\n\nLe télécharger maintenant ? (environ 200 Mo, une seule fois)",
-            "Installer FFmpeg", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
+            L.T("La conversion utilise FFmpeg, un logiciel libre séparé.\n\nLe télécharger maintenant ? (environ 200 Mo, une seule fois)"),
+            L.T("Installer FFmpeg"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
         return answer == MessageBoxResult.Yes && await DownloadAsync(view);
     }
 }

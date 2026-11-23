@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -52,7 +53,7 @@ internal static partial class FfmpegRunner
             }
         };
 
-        if (!process.Start()) throw new InvalidOperationException("Impossible de lancer FFmpeg.");
+        if (!process.Start()) throw new InvalidOperationException(L.T("Impossible de lancer FFmpeg."));
         process.BeginErrorReadLine();
         process.BeginOutputReadLine();
 

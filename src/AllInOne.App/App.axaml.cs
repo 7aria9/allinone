@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
@@ -11,7 +12,7 @@ public partial class App : Application
     /// <summary>
     /// Avec « --smoke-test », l'application affiche chaque écran puis se ferme d'elle-même (code 0), ou se termine avec
     /// le code 1 en cas d'erreur, sans boîte de dialogue. « --screenshots &lt;dossier&gt; » y enregistre une capture de
-    /// chaque écran. Sert au test de démarrage en CI.
+    /// chaque écran. Sert au test de démarrage en CI. « --lang en|de|es|fr » choisit la langue pour ce lancement.
     /// </summary>
     internal static bool SmokeTest { get; private set; }
     internal static string? ScreenshotDirectory { get; private set; }
@@ -23,6 +24,9 @@ public partial class App : Application
         SmokeTest = args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase);
         var i = Array.FindIndex(args, a => a.Equals("--screenshots", StringComparison.OrdinalIgnoreCase));
         if (i >= 0 && i + 1 < args.Length) ScreenshotDirectory = args[i + 1];
+        // Langue : « --lang en » pour cette fois, sinon celle choisie dans l'application, sinon celle du système.
+        var lang = Array.FindIndex(args, a => a.Equals("--lang", StringComparison.OrdinalIgnoreCase));
+        L.Initialize(lang >= 0 && lang + 1 < args.Length ? args[lang + 1] : null);
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
@@ -40,7 +44,7 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
             e.Handled = true;
-            Report(e.Exception, "Erreur inattendue");
+            Report(e.Exception, L.T("Erreur inattendue"));
         };
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -71,8 +75,8 @@ public partial class App : Application
     {
         var log = CrashLog.Write(ex, context);
         if (SmokeTest) { Console.Error.WriteLine(ex); Environment.Exit(1); }
-        var text = CrashLog.Describe(ex) + (log is null ? "" : $"\n\nDétails enregistrés dans :\n{log}");
-        _ = Dialog.Show(null, text, "AllInOne : erreur inattendue", MessageBoxButton.OK, MessageBoxImage.Error);
+        var text = CrashLog.Describe(ex) + (log is null ? "" : L.T("\n\nDétails enregistrés dans :\n{0}", log));
+        _ = Dialog.Show(null, text, L.T("AllInOne : erreur inattendue"), MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     /// <summary>Erreur qui empêche l'application de continuer : journalisée, écrite sur la console, puis sortie.</summary>
@@ -81,12 +85,12 @@ public partial class App : Application
         var log = CrashLog.Write(ex, context);
         Console.Error.WriteLine($"AllInOne : {context}");
         Console.Error.WriteLine(ex);
-        if (log is not null) Console.Error.WriteLine($"Détails enregistrés dans : {log}");
+        if (log is not null) Console.Error.WriteLine(L.T("Détails enregistrés dans : {0}", log));
         // Sous Windows, une application graphique n'a pas de console : boîte de message système, qui ne dépend pas d'Avalonia.
         if (!SmokeTest && OperatingSystem.IsWindows())
         {
-            var text = CrashLog.Describe(ex) + (log is null ? "" : $"\n\nDétails enregistrés dans :\n{log}");
-            try { NativeMessageBox(IntPtr.Zero, text, "AllInOne : erreur", 0x10); } catch { /* rien de plus à faire */ }
+            var text = CrashLog.Describe(ex) + (log is null ? "" : L.T("\n\nDétails enregistrés dans :\n{0}", log));
+            try { NativeMessageBox(IntPtr.Zero, text, L.T("AllInOne : erreur"), 0x10); } catch { /* rien de plus à faire */ }
         }
         Environment.Exit(1);
     }

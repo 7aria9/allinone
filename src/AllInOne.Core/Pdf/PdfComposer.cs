@@ -2,6 +2,7 @@ using ImageMagick;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Pdf;
 
@@ -24,7 +25,7 @@ public static class PdfComposer
         imageOptions ??= new ImagePageOptions();
         var list = pages.ToList();
         if (list.Count == 0)
-            throw new InvalidOperationException("Le document doit contenir au moins une page.");
+            throw new InvalidOperationException(L.T("Le document doit contenir au moins une page."));
 
         // Les PDF sources sont lus en mémoire : on peut ainsi écraser l'un d'eux avec le résultat.
         var opened = new Dictionary<string, PdfDocument>(StringComparer.OrdinalIgnoreCase);
@@ -112,7 +113,7 @@ public static class PdfComposer
     private static void AddPdfPage(PdfDocument output, PdfDocument source, PdfPageSource p)
     {
         if (p.PageIndex < 0 || p.PageIndex >= source.PageCount)
-            throw new ArgumentOutOfRangeException(null, $"La page {p.PageIndex + 1} n'existe pas dans {Path.GetFileName(p.Path)}.");
+            throw new ArgumentOutOfRangeException(null, L.T("La page {0} n'existe pas dans {1}.", p.PageIndex + 1, Path.GetFileName(p.Path)));
         var page = output.AddPage(source.Pages[p.PageIndex]);
         ApplyRotation(page, p.Rotation);
     }
@@ -120,7 +121,7 @@ public static class PdfComposer
     private static void ApplyRotation(PdfPage page, int extraRotation)
     {
         if (extraRotation % 90 != 0)
-            throw new ArgumentException("La rotation doit être un multiple de 90°.");
+            throw new ArgumentException(L.T("La rotation doit être un multiple de 90°."));
         if (extraRotation == 0) return;
         page.Rotate = Normalize(page.Rotate + extraRotation);
     }
@@ -186,7 +187,7 @@ public static class PdfComposer
         if (frameIndex == 0) return new MagickImage(path);
         using var collection = new MagickImageCollection(path);
         if (frameIndex >= collection.Count)
-            throw new ArgumentOutOfRangeException(null, $"L'image {Path.GetFileName(path)} n'a que {collection.Count} page(s).");
+            throw new ArgumentOutOfRangeException(null, L.T("L'image {0} n'a que {1} page(s).", Path.GetFileName(path), collection.Count));
         return new MagickImage(collection[frameIndex]);
     }
 

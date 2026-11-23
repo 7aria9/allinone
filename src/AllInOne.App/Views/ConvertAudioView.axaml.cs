@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
 using AllInOne.Core.Video;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App.Views;
 
@@ -41,13 +42,13 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         MediaItems.LoadInfo(added);
         if (string.IsNullOrWhiteSpace(OutputDir.Text) && added.Count > 0)
             OutputDir.Text = Path.Combine(added[0].Folder, "converties");
-        if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format non reconnu.");
+        if (skipped > 0) MainWindow.Of(this).SetStatus(L.T("{0} fichier(s) ignoré(s) : format non reconnu.", skipped));
     }
 
     private async void Add_Click(object? sender, RoutedEventArgs e) =>
-        AddFiles(await Dialogs.OpenFiles(this, "Choisir des sons ou des vidéos", true,
-            Dialogs.Type("Sons et vidéos", AudioFormats.InputExtensions.Concat(VideoFormats.InputExtensions)),
-            Dialogs.Type("Sons", AudioFormats.InputExtensions)), _items.Count);
+        AddFiles(await Dialogs.OpenFiles(this, L.T("Choisir des sons ou des vidéos"), true,
+            Dialogs.Type(L.T("Sons et vidéos"), AudioFormats.InputExtensions.Concat(VideoFormats.InputExtensions)),
+            Dialogs.Type(L.T("Sons"), AudioFormats.InputExtensions)), _items.Count);
 
     private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
     private void Clear_Click(object? sender, RoutedEventArgs e) => _items.Clear();
@@ -62,7 +63,7 @@ public partial class ConvertAudioView : UserControl, IMediaListView
 
     private async void BrowseOutput_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = await Dialogs.PickFolder(this, "Dossier où enregistrer les sons convertis", OutputDir.Text);
+        var folder = await Dialogs.PickFolder(this, L.T("Dossier où enregistrer les sons convertis"), OutputDir.Text);
         if (folder is not null) OutputDir.Text = folder;
     }
 
@@ -81,9 +82,9 @@ public partial class ConvertAudioView : UserControl, IMediaListView
     private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
         var owner = MainWindow.Of(this);
-        if (_items.Count == 0) { await Dialog.Show(owner, "Ajoutez au moins un fichier.", "AllInOne"); return; }
+        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins un fichier."), "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { await Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne"); return; }
 
         var (trimOk, trimStart, trimEnd) = await MediaItems.ReadTrimAsync(TrimStart, TrimEnd, owner);
         if (!trimOk) return;
@@ -104,22 +105,22 @@ public partial class ConvertAudioView : UserControl, IMediaListView
         var items = _items.ToList();
         var window = MainWindow.Of(this);
         MediaItems.Result? result = null;
-        var ok = await window.RunBusyAsync($"Conversion de {items.Count} fichier(s)…",
+        var ok = await window.RunBusyAsync(L.T("Conversion de {0} fichier(s)…", items.Count),
             async (p, ct) => result = await MediaItems.ConvertAsync(items, outputDir, format.Extension(),
                 (input, output, progress, token) => AudioConverter.ConvertAsync(input, output, format, options, progress, token),
                 p, window.SetStatus, Files.ScrollIntoView, ct, trimStart, trimEnd),
-            $"Sons convertis dans {outputDir}", cancellable: true);
+            L.T("Sons convertis dans {0}", outputDir), cancellable: true);
         if (!ok || result is null) return;
         var count = result.Written.Count;
         if (result.Failures.Count > 0)
         {
-            window.SetStatus($"{count} fichier(s) converti(s), {result.Failures.Count} en échec.");
+            window.SetStatus(L.T("{0} fichier(s) converti(s), {1} en échec.", count, result.Failures.Count));
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
-            if (result.Failures.Count > 5) details += $"\n\n… et {result.Failures.Count - 5} autre(s).";
-            await Dialog.Show(owner, $"{result.Failures.Count} fichier(s) n'ont pas pu être convertis :\n\n{details}", "AllInOne",
+            if (result.Failures.Count > 5) details += L.T("\n\n… et {0} autre(s).", result.Failures.Count - 5);
+            await Dialog.Show(owner, L.T("{0} fichier(s) n'ont pas pu être convertis :\n\n{1}", result.Failures.Count, details), "AllInOne",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }
-        await window.OfferToOpen(outputDir, $"{count} fichier(s) converti(s) dans {outputDir}.");
+        await window.OfferToOpen(outputDir, L.T("{0} fichier(s) converti(s) dans {1}.", count, outputDir));
     }
 }

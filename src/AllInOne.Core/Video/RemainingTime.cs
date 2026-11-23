@@ -1,4 +1,5 @@
 using System.Globalization;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -20,16 +21,16 @@ public static class RemainingTime
     public static string Format(TimeSpan remaining)
     {
         var seconds = (long)Math.Ceiling(remaining.TotalSeconds);
-        if (seconds < 5) return "quelques secondes";
-        if (seconds < 60) return $"≈ {(seconds + 4) / 5 * 5} s";
+        if (seconds < 5) return L.T("quelques secondes");
+        if (seconds < 60) return L.T("≈ {0} s", (seconds + 4) / 5 * 5);
         if (seconds < 600)
         {
             var rounded = (seconds + 9) / 10 * 10;
             var s = rounded % 60;
-            return s == 0 ? $"≈ {rounded / 60} min" : $"≈ {rounded / 60} min {s:00} s";
+            return s == 0 ? L.T("≈ {0} min", rounded / 60) : L.T("≈ {0} min {1:00} s", rounded / 60, s);
         }
-        if (seconds < 3600) return $"≈ {(seconds + 59) / 60} min";
+        if (seconds < 3600) return L.T("≈ {0} min", (seconds + 59) / 60);
         var minutes = (seconds + 59) / 60;
-        return $"≈ {minutes / 60} h {(minutes % 60).ToString("00", CultureInfo.InvariantCulture)} min";
+        return L.T("≈ {0} h {1} min", minutes / 60, (minutes % 60).ToString("00", CultureInfo.InvariantCulture));
     }
 }

@@ -1,11 +1,13 @@
 using System.Globalization;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
 /// <summary>Caractéristiques d'un fichier audio ou vidéo, lues avec ffprobe (ou ffmpeg à défaut).</summary>
 public sealed class MediaInfo
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    /// <summary>Nombres écrits dans la langue de l'interface (virgule décimale en français…).</summary>
+    private static CultureInfo French => L.Culture;
 
     public long? SizeBytes { get; init; }
     public TimeSpan? Duration { get; init; }
@@ -33,7 +35,7 @@ public sealed class MediaInfo
         if (Duration is { } d) parts.Add(FormatDuration(d));
         if (Width is { } w && Height is { } h) parts.Add($"{w}×{h}");
         if (VideoCodec is not null) parts.Add(CodecName(VideoCodec));
-        if (FrameRate is > 0 and var fps) parts.Add($"{Math.Round(fps, 2).ToString("0.##", French)} i/s");
+        if (FrameRate is > 0 and var fps) parts.Add(L.T("{0} i/s", Math.Round(fps, 2).ToString("0.##", French)));
         if (BitRate is > 0 and var br) parts.Add(FormatBitRate(br));
         if (AudioCodec is not null)
         {
@@ -42,7 +44,7 @@ public sealed class MediaInfo
             if (Channels is > 0 and var ch) audio += " " + ChannelName(ch);
             parts.Add(audio);
         }
-        else if (HasVideo) parts.Add("sans son");
+        else if (HasVideo) parts.Add(L.T("sans son"));
         if (SizeBytes is { } size) parts.Add(FormatSize(size));
         return string.Join(" · ", parts);
     }
@@ -53,11 +55,11 @@ public sealed class MediaInfo
         var parts = new List<string>();
         if (Duration is { } d) parts.Add(FormatDuration(d));
         if (AudioCodec is not null) parts.Add(CodecName(AudioCodec));
-        else parts.Add("aucune piste audio");
+        else parts.Add(L.T("aucune piste audio"));
         if ((AudioBitRate ?? (HasVideo ? null : BitRate)) is > 0 and var br) parts.Add(FormatBitRate(br));
         if (SampleRate is > 0 and var sr) parts.Add(FormatSampleRate(sr));
         if (Channels is > 0 and var ch) parts.Add(ChannelName(ch));
-        if (HasVideo) parts.Add("vidéo");
+        if (HasVideo) parts.Add(L.T("vidéo"));
         if (SizeBytes is { } size) parts.Add(FormatSize(size));
         return string.Join(" · ", parts);
     }
@@ -71,7 +73,7 @@ public sealed class MediaInfo
 
     public static string FormatSize(long bytes)
     {
-        string[] units = ["o", "Ko", "Mo", "Go", "To"];
+        string[] units = [L.T("o"), L.T("Ko"), L.T("Mo"), L.T("Go"), L.T("To")];
         double value = bytes;
         var unit = 0;
         while (value >= 1024 && unit < units.Length - 1) { value /= 1024; unit++; }
@@ -90,11 +92,11 @@ public sealed class MediaInfo
 
     public static string ChannelName(int channels) => channels switch
     {
-        1 => "mono",
-        2 => "stéréo",
+        1 => L.T("mono"),
+        2 => L.T("stéréo"),
         6 => "5.1",
         8 => "7.1",
-        _ => $"{channels} canaux",
+        _ => L.T("{0} canaux", channels),
     };
 
     /// <summary>Nom lisible d'un codec FFmpeg (h264 → H.264, pcm_s16le → PCM 16 bits…).</summary>
@@ -104,7 +106,7 @@ public sealed class MediaInfo
         if (c.StartsWith("pcm_", StringComparison.Ordinal))
         {
             var bits = new string(c.Where(char.IsDigit).ToArray());
-            return bits.Length > 0 ? $"PCM {bits} bits" : "PCM";
+            return bits.Length > 0 ? L.T("PCM {0} bits", bits) : "PCM";
         }
         return c switch
         {

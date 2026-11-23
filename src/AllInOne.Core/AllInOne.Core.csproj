@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Traductions : le texte français sert de clé (voir Localization/L.cs). -->
+    <EmbeddedResource Include="Localization\*.json" LogicalName="AllInOne.Core.Localization.%(Filename).json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="AllInOne.Core.Tests" />
   </ItemGroup>
 </Project>

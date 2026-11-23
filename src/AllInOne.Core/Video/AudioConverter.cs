@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core.Video;
 
 /// <summary>Formats audio de sortie.</summary>
@@ -51,7 +52,7 @@ public static class AudioFormats
         "ogg" or "oga" or "vorbis" => AudioFormat.Ogg,
         "opus" => AudioFormat.Opus,
         "m4a" or "aac" => AudioFormat.M4a,
-        _ => throw new ArgumentException($"Format audio inconnu : {value}"),
+        _ => throw new ArgumentException(L.T("Format audio inconnu : {0}", value)),
     };
 }
 
@@ -120,9 +121,9 @@ public static class AudioConverter
     {
         options ??= new AudioConversionOptions();
         ffmpegPath ??= FfmpegLocator.Find() ?? throw new FfmpegNotFoundException();
-        if (!File.Exists(inputPath)) throw new FileNotFoundException($"Fichier introuvable : {inputPath}", inputPath);
+        if (!File.Exists(inputPath)) throw new FileNotFoundException(L.T("Fichier introuvable : {0}", inputPath), inputPath);
         if (string.Equals(Path.GetFullPath(inputPath), Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Le fichier de sortie doit être différent du fichier d'origine.");
+            throw new InvalidOperationException(L.T("Le fichier de sortie doit être différent du fichier d'origine."));
 
         var args = FfmpegAudioArguments.Build(inputPath, outputPath, format, options);
         await FfmpegRunner.RunAsync(ffmpegPath, args, inputPath, outputPath, progress, cancellationToken, options.Start, options.End);
@@ -138,7 +139,7 @@ public static class AudioConverter
         for (var i = 0; i < inputs.Count; i++)
         {
             var index = i;
-            status?.Report($"Conversion {i + 1}/{inputs.Count} : {Path.GetFileName(inputs[i])}…");
+            status?.Report(L.T("Conversion {0}/{1} : {2}…", i + 1, inputs.Count, Path.GetFileName(inputs[i])));
             var target = FileNames.Unique(Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(inputs[i]) + format.Extension()));
             var fileProgress = new VideoConverter.SyncProgress(v => progress?.Report((index + v) / inputs.Count));
             await ConvertAsync(inputs[i], target, format, options, fileProgress, cancellationToken, ffmpeg);

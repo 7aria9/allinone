@@ -1,3 +1,4 @@
+using AllInOne.Core.Localization;
 namespace AllInOne.Core;
 
 /// <summary>Formats d'image pris en charge en sortie.</summary>
@@ -52,7 +53,7 @@ public static class ImageFormats
             "tif" or "tiff" => ImageFormatKind.Tiff,
             "webp" => ImageFormatKind.Webp,
             "avif" => ImageFormatKind.Avif,
-            _ => throw new ArgumentException($"Format d'image inconnu : {value}"),
+            _ => throw new ArgumentException(L.T("Format d'image inconnu : {0}", value)),
         };
     }
 }

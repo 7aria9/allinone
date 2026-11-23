@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using AllInOne.Core;
 using AllInOne.Core.Pdf;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App.Views;
 
@@ -26,12 +27,12 @@ public partial class ImagesToPdfView : UserControl
         var skipped = paths.Length - added.Count;
         index = Math.Clamp(index, 0, _items.Count);
         for (var i = 0; i < added.Count; i++) _items.Insert(index + i, added[i]);
-        if (skipped > 0) MainWindow.Of(this).SetStatus($"{skipped} fichier(s) ignoré(s) : format d'image non reconnu.");
+        if (skipped > 0) MainWindow.Of(this).SetStatus(L.T("{0} fichier(s) ignoré(s) : format d'image non reconnu.", skipped));
         _ = Thumbnails.LoadImageThumbnailsAsync(added);
     }
 
     private async void Add_Click(object? sender, RoutedEventArgs e) =>
-        AddFiles((await Dialogs.OpenFiles(this, "Choisir des images", true, Dialogs.Images)), _items.Count);
+        AddFiles((await Dialogs.OpenFiles(this, L.T("Choisir des images"), true, Dialogs.Images)), _items.Count);
 
     private void Remove_Click(object? sender, RoutedEventArgs e) => ListTools.RemoveSelected(Files, _items);
     private void Up_Click(object? sender, RoutedEventArgs e) => ListTools.MoveSelected(Files, _items, -1);
@@ -63,12 +64,12 @@ public partial class ImagesToPdfView : UserControl
     {
         if (_items.Count == 0)
         {
-            await Dialog.Show(MainWindow.Of(this), "Ajoutez au moins une image.", "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("Ajoutez au moins une image."), "AllInOne");
             return;
         }
         if (!double.TryParse(MarginBox.Text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var margin) || margin < 0)
         {
-            await Dialog.Show(MainWindow.Of(this), "La marge doit être un nombre positif (en millimètres).", "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("La marge doit être un nombre positif (en millimètres)."), "AllInOne");
             return;
         }
 
@@ -86,9 +87,9 @@ public partial class ImagesToPdfView : UserControl
 
         var paths = _items.Select(i => i.Path).ToList();
         var window = MainWindow.Of(this);
-        var ok = await window.RunBusyAsync("Création du PDF…",
+        var ok = await window.RunBusyAsync(L.T("Création du PDF…"),
             p => Task.Run(() => PdfTools.ImagesToPdf(paths, output, options, p)),
-            $"PDF créé : {output}");
-        if (ok) await window.OfferToOpen(output, $"Le PDF a été créé ({paths.Count} image(s)).");
+            L.T("PDF créé : {0}", output));
+        if (ok) await window.OfferToOpen(output, L.T("Le PDF a été créé ({0} image(s)).", paths.Count));
     }
 }

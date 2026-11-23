@@ -1,4 +1,5 @@
 using System.Globalization;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.Core.Video;
 
@@ -30,8 +31,8 @@ public static class VideoFrames
     public static IReadOnlyList<string> Arguments(string input, string outputPattern, FrameExtractionOptions options)
     {
         if (options.Format is not (ImageFormatKind.Png or ImageFormatKind.Jpeg))
-            throw new ArgumentException("Les images d'une vidéo s'enregistrent en PNG ou en JPEG.");
-        if (options.FramesPerSecond is <= 0) throw new ArgumentException("La fréquence doit être supérieure à zéro.");
+            throw new ArgumentException(L.T("Les images d'une vidéo s'enregistrent en PNG ou en JPEG."));
+        if (options.FramesPerSecond is <= 0) throw new ArgumentException(L.T("La fréquence doit être supérieure à zéro."));
 
         var args = new List<string> { "-hide_banner", "-nostdin", "-y" };
         args.AddRange(Trim.BeforeInput(options.Start, options.End));
@@ -64,7 +65,7 @@ public static class VideoFrames
     {
         options ??= new FrameExtractionOptions();
         ffmpegPath ??= FfmpegLocator.Find() ?? throw new FfmpegNotFoundException();
-        if (!File.Exists(inputPath)) throw new FileNotFoundException($"Fichier introuvable : {inputPath}", inputPath);
+        if (!File.Exists(inputPath)) throw new FileNotFoundException(L.T("Fichier introuvable : {0}", inputPath), inputPath);
 
         Directory.CreateDirectory(outputDirectory);
         var name = Path.GetFileNameWithoutExtension(inputPath);
@@ -84,7 +85,7 @@ public static class VideoFrames
         var files = NewFiles();
         if (files.Count == 0)
             throw new VideoConversionException(Path.GetFileName(inputPath),
-                "Aucune image extraite : le passage choisi est peut-être après la fin de la vidéo.", "");
+                L.T("Aucune image extraite : le passage choisi est peut-être après la fin de la vidéo."), "");
         return files;
 
         List<string> NewFiles() => Directory.EnumerateFiles(outputDirectory, name + "_*" + extension)

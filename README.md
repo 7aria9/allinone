@@ -18,6 +18,17 @@ Elle permet de :
 
 Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
 
+L'application et la ligne de commande sont disponibles en **français, anglais, allemand et espagnol**. La langue du système est
+choisie automatiquement (l'anglais si elle n'est pas proposée) ; on peut la changer en haut à droite de la fenêtre, et ce choix
+est retenu. En ligne de commande : option `--lang fr|en|de|es` ou variable d'environnement `ALLINONE_LANG`.
+
+### Traductions
+
+Le texte français sert de clé : dans le code, `L.T("Ajouter des images")` (ou `L.T("{0} page(s)", n)` avec des valeurs) ;
+dans les fichiers `.axaml`, les textes écrits en dur sont traduits automatiquement au chargement de la fenêtre. Les traductions
+sont dans `src/AllInOne.Core/Localization/en.json`, `de.json` et `es.json`. Le test `LocalizationTests` échoue si un texte
+du code ou des écrans n'a pas de traduction dans l'une des langues, ou si les marqueurs `{0}`… ne correspondent pas.
+
 ## Structure
 
 | Projet | Rôle |

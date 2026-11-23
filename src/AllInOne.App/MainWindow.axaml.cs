@@ -2,9 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Platform.Storage;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
@@ -12,7 +14,43 @@ public partial class MainWindow : Window
 {
     private CancellationTokenSource? _cancel;
 
-    public MainWindow() => InitializeComponent();
+    public MainWindow()
+    {
+        InitializeComponent();
+        foreach (var (code, name) in L.Languages)
+            LanguageBox.Items.Add(new ComboBoxItem { Content = name, Tag = code });
+        LanguageBox.SelectedIndex = L.Languages.ToList().FindIndex(l => l.Code == L.Language);
+        LanguageBox.SelectionChanged += Language_Changed;
+        Translator.Apply(this);
+    }
+
+    /// <summary>Change de langue : la fenêtre est reconstruite dans la nouvelle langue, au même endroit.</summary>
+    private void Language_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (LanguageBox.SelectedItem is not ComboBoxItem { Tag: string code } || code == L.Language) return;
+        Settings.Language = code;
+        L.SetLanguage(code);
+        var page = Pages.Children.ToList().FindIndex(c => c.IsVisible);
+        var replacement = new MainWindow
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Position = Position,
+            Width = Width,
+            Height = Height,
+            WindowState = WindowState,
+        };
+        replacement.SelectPage(page);
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.MainWindow = replacement;
+        replacement.Show();
+        Close();
+    }
+
+    private void SelectPage(int index)
+    {
+        if (index <= 0) return;
+        var buttons = Nav.GetLogicalDescendants().OfType<RadioButton>().ToList();
+        if (index < buttons.Count) buttons[index].IsChecked = true;
+    }
 
     private void Nav_Checked(object? sender, RoutedEventArgs e)
     {
@@ -63,7 +101,7 @@ public partial class MainWindow : Window
     public async Task<bool> RunBusyAsync(string message, Func<IProgress<double>, CancellationToken, Task> work,
         string? successMessage, bool cancellable)
     {
-        Pages.IsEnabled = Nav.IsEnabled = false;
+        Pages.IsEnabled = Nav.IsEnabled = LanguageBox.IsEnabled = false;
         StatusText.Text = message;
         Progress.Value = 0;
         Progress.IsVisible = true;
@@ -74,17 +112,17 @@ public partial class MainWindow : Window
         try
         {
             await work(progress, _cancel.Token);
-            StatusText.Text = successMessage ?? "Terminé.";
+            StatusText.Text = successMessage ?? L.T("Terminé.");
             return true;
         }
         catch (OperationCanceledException)
         {
-            StatusText.Text = "Arrêté.";
+            StatusText.Text = L.T("Arrêté.");
             return false;
         }
         catch (Exception ex)
         {
-            StatusText.Text = "Échec : " + ex.Message.Split('\n')[0];
+            StatusText.Text = L.T("Échec : ") + ex.Message.Split('\n')[0];
             CrashLog.Write(ex, message);
             await Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
@@ -95,7 +133,7 @@ public partial class MainWindow : Window
             _cancel = null;
             CancelButton.IsVisible = false;
             Progress.IsVisible = false;
-            Pages.IsEnabled = Nav.IsEnabled = true;
+            Pages.IsEnabled = Nav.IsEnabled = LanguageBox.IsEnabled = true;
         }
     }
 
@@ -103,7 +141,7 @@ public partial class MainWindow : Window
     {
         _cancel?.Cancel();
         CancelButton.IsEnabled = false;
-        StatusText.Text = "Arrêt en cours…";
+        StatusText.Text = L.T("Arrêt en cours…");
     }
 
     public void SetStatus(string text) => StatusText.Text = text;
@@ -111,14 +149,14 @@ public partial class MainWindow : Window
     /// <summary>Propose d'ouvrir le fichier ou le dossier produit (Explorateur, Finder ou gestionnaire de fichiers).</summary>
     public async Task OfferToOpen(string path, string what)
     {
-        var answer = await Dialog.Show(this, $"{what}\n\nVoulez-vous l'ouvrir ?", "C'est fait !",
+        var answer = await Dialog.Show(this, L.T("{0}\n\nVoulez-vous l'ouvrir ?", what), L.T("C'est fait !"),
             MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
         if (answer != MessageBoxResult.Yes) return;
         try
         {
             var opened = Directory.Exists(path) ? await Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(path))
                 : File.Exists(path) && await Launcher.LaunchFileInfoAsync(new FileInfo(path));
-            if (!opened) await Dialog.Show(this, $"Impossible de l'ouvrir automatiquement :\n{path}", "AllInOne");
+            if (!opened) await Dialog.Show(this, L.T("Impossible de l'ouvrir automatiquement :\n{0}", path), "AllInOne");
         }
         catch (Exception ex)
         {
