@@ -35,6 +35,11 @@ dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:P
 
 L'intégration continue GitHub Actions produit aussi ces exécutables (artefact `AllInOne-win-x64`).
 
+**Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
+[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux exécutables Windows autonomes :
+`AllInOne-<version>-win-x64.exe` (application) et `allinone-cli-<version>-win-x64.exe` (ligne de commande).
+Aucune installation de .NET n'est nécessaire pour les lancer.
+
 Onglets :
 
 1. **Images → PDF** : ajoutez ou glissez des images, ordonnez-les (glisser-déposer, Monter/Descendre, Trier par nom), choisissez la taille de page (A4, A3, A5, Lettre, Légal ou taille de l'image), l'orientation et la marge.
