@@ -43,6 +43,8 @@ jobs:
             dotnet publish src/AllInOne.Cli @common --self-contained $($mode.SelfContained) -o $out
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+          ./.github/scripts/smoke-test.ps1 -Folders publish/leger, publish/autonome
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Force release | Out-Null
           Compress-Archive -Path publish/leger/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64.zip"
           Compress-Archive -Path publish/autonome/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64-autonome.zip"

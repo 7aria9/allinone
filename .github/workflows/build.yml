@@ -27,11 +27,19 @@ jobs:
           dotnet-version: 8.0.x
       - name: Tests (Windows)
         run: dotnet test tests/AllInOne.Core.Tests -c Release
-      - name: Publication (application + ligne de commande, DLL à côté des exe)
+      - name: Publication (légère et autonome, DLL à côté des exe)
+        shell: pwsh
         run: |
-          dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained false -p:DebugType=none -o publish
-          dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained false -p:DebugType=none -o publish
+          foreach ($mode in @(@{ Name = 'leger'; SelfContained = 'false' }, @{ Name = 'autonome'; SelfContained = 'true' })) {
+            dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            dotnet publish src/AllInOne.Cli -c Release -r win-x64 --self-contained $($mode.SelfContained) -p:DebugType=none -o "publish/$($mode.Name)"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Test de démarrage de l'application
+        shell: pwsh
+        run: ./.github/scripts/smoke-test.ps1 -Folders publish/leger, publish/autonome
       - uses: actions/upload-artifact@v4
         with:
           name: AllInOne-win-x64
-          path: publish/
+          path: publish/leger/
