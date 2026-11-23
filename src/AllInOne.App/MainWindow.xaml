@@ -40,6 +40,7 @@
                 <RadioButton Style="{StaticResource NavButton}" Content="🧩   PDF → images" Tag="2" Checked="Nav_Checked" />
                 <RadioButton Style="{StaticResource NavButton}" Content="🔁   Convertir des images" Tag="3" Checked="Nav_Checked" />
                 <RadioButton Style="{StaticResource NavButton}" Content="🎬   Convertir des vidéos" Tag="4" Checked="Nav_Checked" />
+                <RadioButton Style="{StaticResource NavButton}" Content="🎵   Convertir des sons" Tag="5" Checked="Nav_Checked" />
             </StackPanel>
         </Border>
 
@@ -50,6 +51,7 @@
             <views:PdfToImagesView Visibility="Collapsed" />
             <views:ConvertImagesView Visibility="Collapsed" />
             <views:ConvertVideosView Visibility="Collapsed" />
+            <views:ConvertAudioView Visibility="Collapsed" />
         </Grid>
     </DockPanel>
 </Window>

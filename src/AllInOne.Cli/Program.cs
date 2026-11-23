@@ -28,6 +28,8 @@ public static class Program
           convert    <dossier> <image...> --format png|jpg|bmp|gif|tiff|webp [--quality 90] [--max-width px] [--max-height px]
           video      <dossier> <vidéo...> --format mp4|mkv|webm|avi|ogg|mov [--quality haute|moyenne|faible]
                      [--max-height 720] [--no-audio] [--copy]   (nécessite FFmpeg dans le PATH)
+          audio      <dossier> <son|vidéo...> --format mp3|wav|aiff|flac|ogg|opus|m4a [--quality haute|moyenne|faible]
+                     [--rate 44100] [--channels 1|2]   (nécessite FFmpeg dans le PATH)
           info       <entrée.pdf>
         """;
 
@@ -177,6 +179,21 @@ public static class Program
                 var files = VideoConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options, progress,
                     status: new Progress<string>(m => Console.Write("\r" + m + Environment.NewLine))).GetAwaiter().GetResult();
                 Console.WriteLine($"\r{files.Count} vidéo(s) convertie(s) dans {a.Positional[0]}");
+                break;
+            }
+            case "audio":
+            {
+                a.Require(2, "audio <dossier> <fichier...> --format <format>");
+                var format = AudioFormats.Parse(a.Get("format") ?? throw new ArgumentException("--format est obligatoire."));
+                var options = new AudioConversionOptions
+                {
+                    Quality = VideoFormats.ParseQuality(a.Get("quality") ?? "haute"),
+                    SampleRate = a.Get("rate") is { } r ? Int(r) : null,
+                    Channels = a.Get("channels") is { } c ? Int(c) : null,
+                };
+                var files = AudioConverter.ConvertManyAsync(a.Positional.Skip(1).ToList(), a.Positional[0], format, options,
+                    status: new Progress<string>(Console.WriteLine)).GetAwaiter().GetResult();
+                Console.WriteLine($"{files.Count} fichier(s) converti(s) dans {a.Positional[0]}");
                 break;
             }
             case "info":

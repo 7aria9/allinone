@@ -7,6 +7,7 @@ Application de bureau Windows (WPF) et outil en ligne de commande pour :
 - **fusionner plusieurs PDF** (et images) en un seul document ;
 - **convertir un PDF en images** (PNG, JPEG, WebP, BMP, GIF, TIFF, résolution au choix) ;
 - **convertir des images d'un format à un autre** (PNG, JPEG, WebP, BMP, GIF, TIFF), avec redimensionnement optionnel ;
+- **convertir des sons** en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A (et extraire le son d'une vidéo) ;
 - **convertir des vidéos** en MP4, MKV, WebM, AVI, OGG ou MOV (qualité, résolution maximale, suppression du son, changement de conteneur sans réencodage).
 
 Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
@@ -28,18 +29,26 @@ Prérequis : Windows 10/11 et le [SDK .NET 8](https://dotnet.microsoft.com/downl
 dotnet run --project src/AllInOne.App
 ```
 
-Pour obtenir un `.exe` autonome (sans installer .NET sur le poste cible) :
+Pour obtenir un dossier prêt à copier (`AllInOne.exe` avec ses DLL à côté) :
 
 ```powershell
-dotnet publish src/AllInOne.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+dotnet publish src/AllInOne.App -c Release -o publish
 ```
 
-L'intégration continue GitHub Actions produit aussi ces exécutables (artefact `AllInOne-win-x64`).
+La compilation produit volontairement **plusieurs fichiers** (exe + DLL) plutôt qu'un seul exe géant, et ne garde que les
+bibliothèques natives Windows x64. Par défaut, elle dépend du runtime .NET installé ; ajoutez `--self-contained true` pour
+embarquer .NET (dossier environ 4 fois plus lourd, mais rien à installer).
 
 **Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
-[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux exécutables Windows autonomes :
-`AllInOne-<version>-win-x64.exe` (application) et `allinone-cli-<version>-win-x64.exe` (ligne de commande).
-Aucune installation de .NET n'est nécessaire pour les lancer.
+[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois) avec deux archives, contenant chacune
+`AllInOne.exe`, `allinone.exe` (ligne de commande) et leurs DLL :
+
+| Archive | Taille (zip / décompressé) | Prérequis |
+| --- | --- | --- |
+| `AllInOne-<version>-win-x64.zip` (légère) | ≈ 21 Mo / 48 Mo | [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
+| `AllInOne-<version>-win-x64-autonome.zip` | ≈ 86 Mo / 194 Mo | aucun |
+
+L'essentiel du poids restant vient des moteurs natifs : ImageMagick (≈ 25 Mo), SkiaSharp (≈ 12 Mo) et PDFium (≈ 7 Mo).
 
 L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, cartes arrondies, barre de titre sombre) avec une navigation latérale entre les quatre outils :
 
@@ -48,10 +57,11 @@ L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, 
 3. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
 4. **Convertir des images** : convertissez un lot d'images vers un autre format, avec largeur/hauteur maximales optionnelles.
 5. **Convertir des vidéos** : ajoutez ou glissez des vidéos, choisissez le format, la qualité et la résolution maximale. Un bouton « Arrêter » interrompt la conversion.
+6. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio.
 
-### FFmpeg (conversion vidéo)
+### FFmpeg (conversion vidéo et audio)
 
-La conversion vidéo utilise [FFmpeg](https://ffmpeg.org/), lancé comme programme séparé. Il n'est **pas inclus** dans l'exe (il pèserait environ 200 Mo de plus) :
+Les conversions vidéo et audio utilisent [FFmpeg](https://ffmpeg.org/), lancé comme programme séparé. Il n'est **pas inclus** dans l'exe (il pèserait environ 200 Mo de plus) :
 à la première conversion, l'application propose de le télécharger (build GPL de [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds))
 dans `%LOCALAPPDATA%\AllInOne\ffmpeg`. Si FFmpeg est déjà installé (à côté de l'exe ou dans le `PATH`), il est utilisé directement.
 La variable d'environnement `ALLINONE_FFMPEG` permet d'indiquer un chemin précis.
@@ -85,6 +95,8 @@ allinone pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
 allinone convert sortie/ *.png --format webp --quality 85 --max-width 1920
 allinone video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
 allinone video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
+allinone audio sortie/ morceau.wav concert.aiff --format mp3 --quality haute
+allinone audio sortie/ film.mp4 --format flac                # extrait le son d'une vidéo
 ```
 
 ## Bibliothèques utilisées et licences
@@ -98,7 +110,7 @@ Toutes les dépendances sont sous licence permissive, compatibles avec un usage 
 | [PDFium](https://pdfium.googlesource.com/pdfium/) (binaires bblanchon) | Moteur de rendu PDF utilisé par PDFtoImage | BSD-3 / Apache 2.0 |
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par PDFtoImage | MIT |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Lecture et conversion des images | Apache 2.0 |
-| [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo | GPL (programme séparé) |
+| [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo et audio | GPL (programme séparé) |
 
 > **Attention :** PDFsharp est volontairement figé en version **6.2.4**. Les versions 6.5 et suivantes sont passées
 > sous licence AGPL-3.0 avec une vérification de licence au démarrage. Ne mettez pas à jour ce paquet sans vérifier sa licence.

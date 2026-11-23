@@ -11,8 +11,13 @@
     <!-- Permet de compiler (sans exécuter) l'application WPF depuis Linux/macOS, par exemple en CI. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
-    <!-- Les bibliothèques natives (PDFium, SkiaSharp, ImageMagick) sont fournies pour Windows x64/x86/arm64. -->
-    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <!--
+      Compilation pour Windows 64 bits, dépendante du runtime .NET installé : le dossier de sortie contient
+      AllInOne.exe et ses DLL côte à côte, uniquement les bibliothèques natives x64 (pas celles des autres plateformes).
+    -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
