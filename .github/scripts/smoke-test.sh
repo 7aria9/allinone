@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Lance AllInOne --smoke-test dans chaque dossier (Linux : sous Xvfb ; macOS : directement).
+# Lance LocalConvert --smoke-test dans chaque dossier (Linux : sous Xvfb ; macOS : directement).
 # L'application doit afficher sa fenêtre et tous ses écrans, puis se fermer d'elle-même avec le code 0.
-# Usage : smoke-test.sh <dossier contenant AllInOne> [dossier des captures d'écran]
+# Usage : smoke-test.sh <dossier contenant LocalConvert> [dossier des captures d'écran]
 folder="$1"
 shots="${2:-}"
-exe="$folder/AllInOne"
+exe="$folder/LocalConvert"
 args=(--smoke-test)
 [ -n "$shots" ] && mkdir -p "$shots" && args+=(--screenshots "$shots")
 
@@ -22,13 +22,13 @@ wait $pid
 code=$?
 if [ $code -ne 0 ]; then
   echo "::error::$exe s'est arrêté avec le code $code"
-  for dir in "$HOME/.local/share/AllInOne/logs" "$HOME/Library/Application Support/AllInOne/logs"; do
+  for dir in "$HOME/.local/share/LocalConvert/logs" "$HOME/Library/Application Support/LocalConvert/logs"; do
     [ -d "$dir" ] && cat "$dir"/*
   done
   exit 1
 fi
 
-cli="$folder/allinone-cli"
+cli="$folder/localconvert-cli"
 if ! "$cli" --help | head -1; then
   echo "::error::$cli --help a échoué"
   exit 1

@@ -90,7 +90,7 @@ public static class L
 public static class Settings
 {
     public static string File =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AllInOne", "settings.json");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LocalConvert", "settings.json");
 
     /// <summary>Langue choisie dans l'application, ou null pour suivre le système.</summary>
     public static string? Language

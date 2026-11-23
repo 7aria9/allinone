@@ -5,7 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>AllInOne</AssemblyName>
+    <AssemblyName>LocalConvert</AssemblyName>
     <RootNamespace>AllInOne.App</RootNamespace>
     <!-- Liaisons par réflexion dans les modèles XAML (plus simple que les liaisons compilées pour ces petites listes). -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

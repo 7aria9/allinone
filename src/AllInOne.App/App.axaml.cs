@@ -76,21 +76,21 @@ public partial class App : Application
         var log = CrashLog.Write(ex, context);
         if (SmokeTest) { Console.Error.WriteLine(ex); Environment.Exit(1); }
         var text = CrashLog.Describe(ex) + (log is null ? "" : L.T("\n\nDétails enregistrés dans :\n{0}", log));
-        _ = Dialog.Show(null, text, L.T("AllInOne : erreur inattendue"), MessageBoxButton.OK, MessageBoxImage.Error);
+        _ = Dialog.Show(null, text, L.T("LocalConvert : erreur inattendue"), MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     /// <summary>Erreur qui empêche l'application de continuer : journalisée, écrite sur la console, puis sortie.</summary>
     internal static void ReportFatal(Exception ex, string context)
     {
         var log = CrashLog.Write(ex, context);
-        Console.Error.WriteLine($"AllInOne : {context}");
+        Console.Error.WriteLine($"LocalConvert : {context}");
         Console.Error.WriteLine(ex);
         if (log is not null) Console.Error.WriteLine(L.T("Détails enregistrés dans : {0}", log));
         // Sous Windows, une application graphique n'a pas de console : boîte de message système, qui ne dépend pas d'Avalonia.
         if (!SmokeTest && OperatingSystem.IsWindows())
         {
             var text = CrashLog.Describe(ex) + (log is null ? "" : L.T("\n\nDétails enregistrés dans :\n{0}", log));
-            try { NativeMessageBox(IntPtr.Zero, text, L.T("AllInOne : erreur"), 0x10); } catch { /* rien de plus à faire */ }
+            try { NativeMessageBox(IntPtr.Zero, text, L.T("LocalConvert : erreur"), 0x10); } catch { /* rien de plus à faire */ }
         }
         Environment.Exit(1);
     }

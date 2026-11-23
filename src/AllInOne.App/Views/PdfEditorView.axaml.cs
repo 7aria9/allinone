@@ -155,7 +155,7 @@ public partial class PdfEditorView : UserControl
     {
         if (_pages.Count == 0)
         {
-            await Dialog.Show(MainWindow.Of(this), L.T("Le document ne contient aucune page."), "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("Le document ne contient aucune page."), "LocalConvert");
             return;
         }
 

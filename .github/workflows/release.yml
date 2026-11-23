@@ -1,11 +1,11 @@
 name: release
 
 # Publie une release GitHub à chaque fusion dans main (une pull request validée = un push sur main).
-# Archives (application AllInOne + ligne de commande allinone-cli, avec leurs bibliothèques côte à côte) :
-#  - AllInOne-<version>-win-x64.zip            : Windows, légère, nécessite le runtime « .NET 8 » ;
-#  - AllInOne-<version>-win-x64-autonome.zip   : Windows, inclut .NET (rien à installer) ;
-#  - AllInOne-<version>-macos-apple-silicon.zip / -macos-intel.zip : AllInOne.app (inclut .NET) ;
-#  - AllInOne-<version>-linux-x64.tar.gz       : Linux, inclut .NET.
+# Archives (application LocalConvert + ligne de commande localconvert-cli, avec leurs bibliothèques côte à côte) :
+#  - LocalConvert-<version>-win-x64.zip            : Windows, légère, nécessite le runtime « .NET 8 » ;
+#  - LocalConvert-<version>-win-x64-autonome.zip   : Windows, inclut .NET (rien à installer) ;
+#  - LocalConvert-<version>-macos-apple-silicon.zip / -macos-intel.zip : LocalConvert.app (inclut .NET) ;
+#  - LocalConvert-<version>-linux-x64.tar.gz       : Linux, inclut .NET.
 on:
   push:
     branches: [main]
@@ -46,8 +46,8 @@ jobs:
           ./.github/scripts/smoke-test.ps1 -Folders publish/leger, publish/autonome
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Force release | Out-Null
-          Compress-Archive -Path publish/leger/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64.zip"
-          Compress-Archive -Path publish/autonome/* -DestinationPath "release/AllInOne-$env:VERSION-win-x64-autonome.zip"
+          Compress-Archive -Path publish/leger/* -DestinationPath "release/LocalConvert-$env:VERSION-win-x64.zip"
+          Compress-Archive -Path publish/autonome/* -DestinationPath "release/LocalConvert-$env:VERSION-win-x64-autonome.zip"
           Get-ChildItem release | Format-Table Name, Length
       - uses: actions/upload-artifact@v4
         with:
@@ -67,12 +67,12 @@ jobs:
         run: dotnet test tests/AllInOne.Core.Tests -c Release
       - name: Publication
         run: |
-          out=publish/AllInOne-$VERSION-linux-x64
+          out=publish/LocalConvert-$VERSION-linux-x64
           dotnet publish src/AllInOne.Cli -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
           dotnet publish src/AllInOne.App -c Release -r linux-x64 --self-contained true -p:DebugType=none -p:Version=$VERSION -o $out
           ./.github/scripts/smoke-test.sh $out
           mkdir -p release
-          tar -czf release/AllInOne-$VERSION-linux-x64.tar.gz -C publish AllInOne-$VERSION-linux-x64
+          tar -czf release/LocalConvert-$VERSION-linux-x64.tar.gz -C publish LocalConvert-$VERSION-linux-x64
           ls -l release
       - uses: actions/upload-artifact@v4
         with:
@@ -94,10 +94,10 @@ jobs:
             dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
             dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
             mkdir -p dist/$rid
-            ./.github/scripts/package-macos.sh publish/$rid $VERSION dist/$rid/AllInOne.zip
-            cp dist/$rid/AllInOne.zip release/AllInOne-$VERSION-macos-$name.zip
+            ./.github/scripts/package-macos.sh publish/$rid $VERSION dist/$rid/LocalConvert.zip
+            cp dist/$rid/LocalConvert.zip release/LocalConvert-$VERSION-macos-$name.zip
           done
-          ./.github/scripts/smoke-test.sh dist/osx-arm64/AllInOne.app/Contents/MacOS
+          ./.github/scripts/smoke-test.sh dist/osx-arm64/LocalConvert.app/Contents/MacOS
           ls -l release
       - uses: actions/upload-artifact@v4
         with:
@@ -124,29 +124,29 @@ jobs:
 
           | Système | Fichier |
           | --- | --- |
-          | Windows (léger) | \`AllInOne-$VERSION-win-x64.zip\` : nécessite le [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
-          | Windows (autonome) | \`AllInOne-$VERSION-win-x64-autonome.zip\` : plus lourd, rien à installer |
-          | Mac Apple Silicon (M1, M2, M3, M4…) | \`AllInOne-$VERSION-macos-apple-silicon.zip\` |
-          | Mac Intel | \`AllInOne-$VERSION-macos-intel.zip\` |
-          | Linux x64 | \`AllInOne-$VERSION-linux-x64.tar.gz\` |
+          | Windows (léger) | \`LocalConvert-$VERSION-win-x64.zip\` : nécessite le [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
+          | Windows (autonome) | \`LocalConvert-$VERSION-win-x64-autonome.zip\` : plus lourd, rien à installer |
+          | Mac Apple Silicon (M1, M2, M3, M4…) | \`LocalConvert-$VERSION-macos-apple-silicon.zip\` |
+          | Mac Intel | \`LocalConvert-$VERSION-macos-intel.zip\` |
+          | Linux x64 | \`LocalConvert-$VERSION-linux-x64.tar.gz\` |
 
-          **Windows** : décompressez l'archive puis lancez \`AllInOne.exe\` (\`allinone-cli.exe\` pour la ligne de commande).
+          **Windows** : décompressez l'archive puis lancez \`LocalConvert.exe\` (\`localconvert-cli.exe\` pour la ligne de commande).
 
-          **Linux** : \`tar -xzf AllInOne-$VERSION-linux-x64.tar.gz\` puis lancez \`./AllInOne\` dans le dossier créé (\`./allinone-cli\` pour la ligne de commande).
+          **Linux** : \`tar -xzf LocalConvert-$VERSION-linux-x64.tar.gz\` puis lancez \`./LocalConvert\` dans le dossier créé (\`./localconvert-cli\` pour la ligne de commande).
 
-          **macOS** : décompressez le zip (double-clic) et glissez **AllInOne.app** dans le dossier Applications.
+          **macOS** : décompressez le zip (double-clic) et glissez **LocalConvert.app** dans le dossier Applications.
           L'application n'est pas signée par Apple (cela demande un compte développeur payant). À la première ouverture, macOS affiche
-          « Apple n'a pas pu vérifier qu'AllInOne ne contenait pas de logiciel malveillant ». Pour l'ouvrir quand même, une seule fois :
+          « Apple n'a pas pu vérifier que LocalConvert ne contenait pas de logiciel malveillant ». Pour l'ouvrir quand même, une seule fois :
           1. ouvrez-la une première fois (double-clic) et fermez le message ;
-          2. allez dans **Réglages Système → Confidentialité et sécurité**, descendez jusqu'à « AllInOne a été bloqué… » et cliquez sur **Ouvrir quand même** ;
+          2. allez dans **Réglages Système → Confidentialité et sécurité**, descendez jusqu'à « LocalConvert a été bloqué… » et cliquez sur **Ouvrir quand même** ;
           3. confirmez avec votre mot de passe. Les ouvertures suivantes se font normalement.
 
-          Sur les versions de macOS plus anciennes que Sequoia, un **clic droit (ou Ctrl-clic) sur AllInOne.app → Ouvrir** suffit.
-          Autre solution, dans le Terminal : \`xattr -dr com.apple.quarantine /Applications/AllInOne.app\`
+          Sur les versions de macOS plus anciennes que Sequoia, un **clic droit (ou Ctrl-clic) sur LocalConvert.app → Ouvrir** suffit.
+          Autre solution, dans le Terminal : \`xattr -dr com.apple.quarantine /Applications/LocalConvert.app\`
 
           **Vidéo et son (FFmpeg)** : sous Windows, l'application propose de télécharger FFmpeg à la première conversion.
           Sur Mac, installez-le avec [Homebrew](https://brew.sh) : \`brew install ffmpeg\`.
           Sous Linux, avec le gestionnaire de paquets : \`sudo apt install ffmpeg\` (Debian, Ubuntu), \`sudo dnf install ffmpeg\` (Fedora) ou \`sudo pacman -S ffmpeg\` (Arch).
           NOTES
           sed -i 's/^          //' notes.md
-          gh release create "v$VERSION" release/* --title "AllInOne $VERSION" --target "$GITHUB_SHA" --notes-file notes.md --generate-notes
+          gh release create "v$VERSION" release/* --title "LocalConvert $VERSION" --target "$GITHUB_SHA" --notes-file notes.md --generate-notes

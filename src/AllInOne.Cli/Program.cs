@@ -10,7 +10,7 @@ namespace AllInOne.Cli;
 public static class Program
 {
     private const string Help = """
-        AllInOne : outils PDF et images en ligne de commande.
+        LocalConvert : outils PDF et images en ligne de commande.
 
         Les pages sont numérotées à partir de 1. Plages : « 1-3,5,8- ».
         Si -o/--output n'est pas indiqué, les commandes de modification écrivent « <nom>_modifie.pdf ».
@@ -41,7 +41,7 @@ public static class Program
 
     public static int Main(string[] args)
     {
-        // Langue : « --lang en|de|es|fr », sinon la variable ALLINONE_LANG, celle choisie dans l'application, ou celle du système.
+        // Langue : « --lang en|de|es|fr », sinon la variable LOCALCONVERT_LANG, celle choisie dans l'application, ou celle du système.
         var lang = Array.FindIndex(args, a => a.Equals("--lang", StringComparison.OrdinalIgnoreCase));
         if (lang >= 0 && lang + 1 < args.Length)
         {
@@ -50,7 +50,7 @@ public static class Program
         }
         else
         {
-            L.Initialize(Environment.GetEnvironmentVariable("ALLINONE_LANG"));
+            L.Initialize(Environment.GetEnvironmentVariable("LOCALCONVERT_LANG"));
         }
 
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
@@ -263,7 +263,7 @@ public static class Program
                 break;
             }
             default:
-                throw new ArgumentException(L.T("Commande inconnue : {0}. Tapez « allinone-cli --help ».", command));
+                throw new ArgumentException(L.T("Commande inconnue : {0}. Tapez « localconvert-cli --help ».", command));
         }
     }
 
@@ -337,6 +337,6 @@ internal sealed class Args
 
     public void Require(int count, string usage)
     {
-        if (Positional.Count < count) throw new ArgumentException(L.T("Usage : allinone-cli ") + usage);
+        if (Positional.Count < count) throw new ArgumentException(L.T("Usage : localconvert-cli ") + usage);
     }
 }

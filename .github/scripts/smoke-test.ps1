@@ -1,10 +1,10 @@
-# Lance AllInOne.exe --smoke-test dans chaque dossier : l'application doit afficher sa fenêtre
+# Lance LocalConvert.exe --smoke-test dans chaque dossier : l'application doit afficher sa fenêtre
 # puis se fermer d'elle-même avec le code 0. En cas d'échec, affiche le journal et l'Observateur d'événements.
 param([string[]] $Folders)
 
 $failed = $false
 foreach ($folder in $Folders) {
-    $exe = Join-Path $folder 'AllInOne.exe'
+    $exe = Join-Path $folder 'LocalConvert.exe'
     Write-Host "== Démarrage de $exe"
     $p = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -PassThru -RedirectStandardError "$folder-stderr.txt"
     $null = $p.Handle  # nécessaire pour lire ExitCode ensuite
@@ -16,7 +16,7 @@ foreach ($folder in $Folders) {
     }
     if ($p.ExitCode -eq 0) {
         Write-Host "OK : la fenêtre principale s'est affichée."
-        $cli = Join-Path $folder 'allinone-cli.exe'
+        $cli = Join-Path $folder 'localconvert-cli.exe'
         if (Test-Path $cli) {
             $out = & $cli --help
             $code = $LASTEXITCODE
@@ -28,7 +28,7 @@ foreach ($folder in $Folders) {
     $failed = $true
     Write-Host "::error::$exe s'est arrêté avec le code $($p.ExitCode)"
     if (Test-Path "$folder-stderr.txt") { Get-Content "$folder-stderr.txt" }
-    $logs = Join-Path $env:LOCALAPPDATA 'AllInOne/logs'
+    $logs = Join-Path $env:LOCALAPPDATA 'LocalConvert/logs'
     if (Test-Path $logs) { Get-ChildItem $logs | ForEach-Object { Get-Content $_.FullName } }
     Get-WinEvent -LogName Application -MaxEvents 30 -ErrorAction SilentlyContinue |
         Where-Object { $_.ProviderName -in '.NET Runtime', 'Application Error' } |

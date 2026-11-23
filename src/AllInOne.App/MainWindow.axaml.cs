@@ -47,7 +47,7 @@ public partial class MainWindow : Window
 
     private void SelectPage(int index)
     {
-        if (index <= 0) return;
+        if (index < 0) return;
         var buttons = Nav.GetLogicalDescendants().OfType<RadioButton>().ToList();
         if (index < buttons.Count) buttons[index].IsChecked = true;
     }
@@ -74,7 +74,7 @@ public partial class MainWindow : Window
         for (var i = 0; i < Pages.Children.Count; i++)
         {
             if (Pages.Children[i] is Views.IMediaListView media) media.AddSmokeTestSamples();
-            ShowPage(i);
+            SelectPage(i); // coche aussi le bouton de navigation, pour des captures fidèles
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             UpdateLayout();
             await Task.Delay(150);
@@ -86,7 +86,7 @@ public partial class MainWindow : Window
                 bitmap.Save(Path.Combine(screenshotDirectory, (i < names.Length ? names[i] : $"page{i + 1}") + ".png"));
             }
         }
-        ShowPage(0);
+        SelectPage(0);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public partial class MainWindow : Window
         {
             StatusText.Text = L.T("Échec : ") + ex.Message.Split('\n')[0];
             CrashLog.Write(ex, message);
-            await Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Error);
+            await Dialog.Show(this, ex.Message, "LocalConvert", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
         finally
@@ -156,11 +156,11 @@ public partial class MainWindow : Window
         {
             var opened = Directory.Exists(path) ? await Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(path))
                 : File.Exists(path) && await Launcher.LaunchFileInfoAsync(new FileInfo(path));
-            if (!opened) await Dialog.Show(this, L.T("Impossible de l'ouvrir automatiquement :\n{0}", path), "AllInOne");
+            if (!opened) await Dialog.Show(this, L.T("Impossible de l'ouvrir automatiquement :\n{0}", path), "LocalConvert");
         }
         catch (Exception ex)
         {
-            await Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Warning);
+            await Dialog.Show(this, ex.Message, "LocalConvert", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

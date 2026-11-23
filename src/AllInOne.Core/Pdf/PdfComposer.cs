@@ -30,7 +30,7 @@ public static class PdfComposer
         // Les PDF sources sont lus en mémoire : on peut ainsi écraser l'un d'eux avec le résultat.
         var opened = new Dictionary<string, PdfDocument>(StringComparer.OrdinalIgnoreCase);
         using var output = new PdfDocument();
-        output.Info.Creator = "AllInOne";
+        output.Info.Creator = "LocalConvert";
 
         try
         {

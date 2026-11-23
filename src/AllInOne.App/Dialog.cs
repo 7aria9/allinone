@@ -18,7 +18,7 @@ public enum MessageBoxResult { None, OK, Cancel, Yes, No }
 /// </summary>
 public static class Dialog
 {
-    public static async Task<MessageBoxResult> Show(Window? owner, string text, string title = "AllInOne",
+    public static async Task<MessageBoxResult> Show(Window? owner, string text, string title = "LocalConvert",
         MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxImage image = MessageBoxImage.None,
         MessageBoxResult defaultResult = MessageBoxResult.None)
     {

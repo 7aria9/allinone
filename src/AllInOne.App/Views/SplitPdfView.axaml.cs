@@ -26,9 +26,12 @@ public partial class SplitPdfView : UserControl, IMediaListView
 
     void IMediaListView.AddSmokeTestSamples()
     {
-        var item = new MediaItem(Environment.ProcessPath ?? "exemple.pdf", "📄");
-        item.SetInfoText("3 pages · 120 Ko");
-        _results.Add(item);
+        foreach (var (name, pages) in new[] { ("report_1-3.pdf", 3), ("report_4-7.pdf", 4), ("report_8-12.pdf", 5) })
+        {
+            var item = new MediaItem(Path.Combine(Path.GetTempPath(), name), "📄");
+            item.SetInfoText(L.T("{0} page(s) · {1}", pages, MediaInfo.FormatSize(pages * 40_000)));
+            _results.Add(item);
+        }
         Mode.SelectedIndex = 2;
     }
 
@@ -68,7 +71,7 @@ public partial class SplitPdfView : UserControl, IMediaListView
         }
         catch (Exception ex)
         {
-            await Dialog.Show(MainWindow.Of(this), L.T("Impossible d'ouvrir ce PDF : {0}", ex.Message), "AllInOne",
+            await Dialog.Show(MainWindow.Of(this), L.T("Impossible d'ouvrir ce PDF : {0}", ex.Message), "LocalConvert",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -77,21 +80,21 @@ public partial class SplitPdfView : UserControl, IMediaListView
     {
         var owner = MainWindow.Of(this);
         var pdf = PdfPath.Text;
-        if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf)) { await Dialog.Show(owner, L.T("Choisissez d'abord un PDF."), "AllInOne"); return; }
+        if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf)) { await Dialog.Show(owner, L.T("Choisissez d'abord un PDF."), "LocalConvert"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "LocalConvert"); return; }
 
         var mode = SelectedMode;
         var every = 0;
         if (mode == "Every" && (!int.TryParse(EveryCount.Text.Trim(), out every) || every < 1))
         {
-            await Dialog.Show(owner, L.T("Indiquez un nombre de pages par fichier (1 ou plus)."), "AllInOne");
+            await Dialog.Show(owner, L.T("Indiquez un nombre de pages par fichier (1 ou plus)."), "LocalConvert");
             return;
         }
         var ranges = Ranges.Text;
         if (mode == "Ranges" && string.IsNullOrWhiteSpace(ranges))
         {
-            await Dialog.Show(owner, L.T("Indiquez les plages de pages, par exemple « 1-3, 4-7, 8- »."), "AllInOne");
+            await Dialog.Show(owner, L.T("Indiquez les plages de pages, par exemple « 1-3, 4-7, 8- »."), "LocalConvert");
             return;
         }
 

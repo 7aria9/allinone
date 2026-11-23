@@ -60,12 +60,12 @@ public partial class ConvertImagesView : UserControl
     private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
         var owner = MainWindow.Of(this);
-        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins une image."), "AllInOne"); return; }
+        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins une image."), "LocalConvert"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "LocalConvert"); return; }
         if (!TryParseSize(MaxWidthBox.Text, out var maxW) || !TryParseSize(MaxHeightBox.Text, out var maxH))
         {
-            await Dialog.Show(owner, L.T("Les dimensions maximales doivent être des nombres entiers positifs."), "AllInOne");
+            await Dialog.Show(owner, L.T("Les dimensions maximales doivent être des nombres entiers positifs."), "LocalConvert");
             return;
         }
 

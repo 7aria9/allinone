@@ -89,9 +89,9 @@ public partial class ConvertVideosView : UserControl, IMediaListView
     private async void Convert_Click(object? sender, RoutedEventArgs e)
     {
         var owner = MainWindow.Of(this);
-        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins une vidéo."), "AllInOne"); return; }
+        if (_items.Count == 0) { await Dialog.Show(owner, L.T("Ajoutez au moins une vidéo."), "LocalConvert"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne"); return; }
+        if (outputDir.Length == 0) { await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "LocalConvert"); return; }
 
         var (trimOk, trimStart, trimEnd) = await MediaItems.ReadTrimAsync(TrimStart, TrimEnd, owner);
         if (!trimOk) return;
@@ -132,7 +132,7 @@ public partial class ConvertVideosView : UserControl, IMediaListView
             window.SetStatus(L.T("{0} fichier(s) converti(s), {1} en échec.", count, result.Failures.Count));
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
             if (result.Failures.Count > 5) details += L.T("\n\n… et {0} autre(s).", result.Failures.Count - 5);
-            await Dialog.Show(owner, L.T("{0} fichier(s) n'ont pas pu être convertis :\n\n{1}", result.Failures.Count, details), "AllInOne",
+            await Dialog.Show(owner, L.T("{0} fichier(s) n'ont pas pu être convertis :\n\n{1}", result.Failures.Count, details), "LocalConvert",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (count == 0) return;
         }
@@ -182,7 +182,7 @@ public partial class ConvertVideosView : UserControl, IMediaListView
         if (result.Failures.Count > 0)
         {
             var details = string.Join("\n\n", result.Failures.Take(5).Select(f => f.Message));
-            await Dialog.Show(owner, L.T("{0} vidéo(s) n'ont pas pu être traitées :\n\n{1}", result.Failures.Count, details), "AllInOne",
+            await Dialog.Show(owner, L.T("{0} vidéo(s) n'ont pas pu être traitées :\n\n{1}", result.Failures.Count, details), "LocalConvert",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             if (result.Written.Count == 0) return;
         }

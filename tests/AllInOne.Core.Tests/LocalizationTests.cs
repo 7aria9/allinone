@@ -43,7 +43,7 @@ public class LocalizationTests
                 foreach (var a in el.Attributes().Where(a => attributes.Contains(a.Name.LocalName)))
                 {
                     var v = a.Value;
-                    if (v.StartsWith('{') || v is "ALL" or "·IN·ONE" or "AllInOne") continue;
+                    if (v.StartsWith('{') || v is "LOCAL" or "CONVERT" or "LocalConvert") continue;
                     if (Regex.IsMatch(v, "[a-zà-ÿ]") && Regex.IsMatch(v, "[A-Za-zÀ-ÿ]{3,}")) yield return v;
                 }
             }

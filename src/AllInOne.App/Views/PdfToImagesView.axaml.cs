@@ -62,7 +62,7 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            await Dialog.Show(MainWindow.Of(this), L.T("Impossible d'ouvrir ce PDF : {0}", ex.Message), "AllInOne",
+            await Dialog.Show(MainWindow.Of(this), L.T("Impossible d'ouvrir ce PDF : {0}", ex.Message), "LocalConvert",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -73,13 +73,13 @@ public partial class PdfToImagesView : UserControl
         var pdf = PdfPath.Text;
         if (string.IsNullOrWhiteSpace(pdf) || !File.Exists(pdf))
         {
-            await Dialog.Show(owner, L.T("Choisissez d'abord un fichier PDF."), "AllInOne");
+            await Dialog.Show(owner, L.T("Choisissez d'abord un fichier PDF."), "LocalConvert");
             return;
         }
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0)
         {
-            await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "AllInOne");
+            await Dialog.Show(owner, L.T("Choisissez un dossier de sortie."), "LocalConvert");
             return;
         }
         var dpi = Dpi.SelectedItem is ComboBoxItem { Tag: string t } ? int.Parse(t, CultureInfo.InvariantCulture) : 150;
@@ -91,7 +91,7 @@ public partial class PdfToImagesView : UserControl
         }
         catch (Exception ex)
         {
-            await Dialog.Show(owner, ex.Message, "AllInOne");
+            await Dialog.Show(owner, ex.Message, "LocalConvert");
             return;
         }
 

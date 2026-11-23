@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:AllInOne.App.Views"
         x:Class="AllInOne.App.MainWindow"
-        Title="AllInOne : PDF, images, vidéos et sons" Width="1180" Height="780" MinWidth="860" MinHeight="540"
+        Title="LocalConvert : PDF, images, vidéos et sons" Width="1180" Height="780" MinWidth="860" MinHeight="540"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
         <!-- En-tête -->
@@ -12,8 +12,8 @@
                           ToolTip.Tip="Langue de l'application" />
                 <StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="ALL" FontSize="28" FontWeight="Black" />
-                    <TextBlock Text="·IN·ONE" FontSize="28" FontWeight="Black" Foreground="{StaticResource AccentGradient}" />
+                    <TextBlock Text="LOCAL" FontSize="28" FontWeight="Black" />
+                    <TextBlock Text="CONVERT" FontSize="28" FontWeight="Black" Foreground="{StaticResource AccentGradient}" />
                 </StackPanel>
                 <TextBlock Text="Tes PDF, images, vidéos et sons, sans rien envoyer sur Internet" Foreground="{StaticResource TextDim}" FontSize="13" />
                 </StackPanel>

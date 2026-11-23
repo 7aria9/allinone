@@ -4,13 +4,13 @@ using AllInOne.Core.Localization;
 
 namespace AllInOne.App;
 
-/// <summary>Journal des erreurs dans %LOCALAPPDATA%\AllInOne\logs (un fichier par jour).</summary>
+/// <summary>Journal des erreurs dans %LOCALAPPDATA%\LocalConvert\logs (un fichier par jour).</summary>
 public static class CrashLog
 {
     public static string Directory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AllInOne", "logs");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LocalConvert", "logs");
 
-    public static string CurrentFile => Path.Combine(Directory, $"allinone-{DateTime.Now:yyyy-MM-dd}.log");
+    public static string CurrentFile => Path.Combine(Directory, $"localconvert-{DateTime.Now:yyyy-MM-dd}.log");
 
     /// <summary>Écrit l'erreur complète (type, message, pile, exceptions internes). Ne lève jamais d'exception.</summary>
     public static string? Write(Exception exception, string context)

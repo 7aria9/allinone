@@ -1,175 +1,143 @@
-# AllInOne : outils PDF et images (C# / .NET 8)
+# LocalConvert: offline PDF, image, video and audio converter
 
-Application de bureau pour **Windows, macOS et Linux** (Avalonia) et outil en ligne de commande qui regroupe les conversions qu'on fait d'habitude sur des sites web. Tout se passe sur l'ordinateur : **aucun fichier n'est envoyé sur Internet**.
+*[Version française](README.fr.md)*
 
-Elle permet de :
+LocalConvert is a free desktop app for **Windows, macOS and Linux** that does the file conversions people usually do on
+websites, **entirely on your computer**. Your files are never uploaded anywhere: no account, no cloud, no tracking.
 
-- **créer un PDF à partir d'une ou plusieurs images** (une page par image, TIFF multipage pris en charge) ;
-- **modifier un PDF** : supprimer des pages, en ajouter (depuis d'autres PDF ou des images), les réorganiser, les faire pivoter ;
-- **fusionner plusieurs PDF** (et images) en un seul document ;
-- **compresser un PDF** (scans, documents pleins de photos) en réduisant ses images, sans toucher au texte ;
-- **découper un PDF** : une page par fichier, toutes les N pages ou selon des plages (« 1-3, 4-7, 8- ») ;
-- **convertir un PDF en images** (PNG, JPEG, WebP, BMP, GIF, TIFF, résolution au choix) ;
-- **convertir des images d'un format à un autre** (PNG, JPEG, WebP, AVIF, BMP, GIF, TIFF), avec redimensionnement optionnel. Les photos **HEIC** des iPhone sont lues partout (conversion, images → PDF) ;
-- **convertir des sons** en MP3, WAV, AIFF, FLAC, OGG, Opus ou M4A (et extraire le son d'une vidéo) ;
-- **convertir des vidéos** en MP4, MKV, WebM, AVI, OGG, MOV ou **GIF animé** (qualité, résolution maximale, suppression du son, changement de conteneur sans réencodage) ;
-- **couper un extrait** d'un son ou d'une vidéo (début et fin) ;
-- **extraire les images d'une vidéo** en PNG ou JPEG : toutes, ou à intervalle régulier (1 par seconde…), sur toute la vidéo ou entre deux positions.
+The app is available in **English, French, German and Spanish**.
 
-Les fichiers d'origine ne sont jamais modifiés, sauf si vous choisissez vous-même de les écraser.
+![Video conversion with per-file progress](docs/screenshots/videos.png)
 
-L'application et la ligne de commande sont disponibles en **français, anglais, allemand et espagnol**. La langue du système est
-choisie automatiquement (l'anglais si elle n'est pas proposée) ; on peut la changer en haut à droite de la fenêtre, et ce choix
-est retenu. En ligne de commande : option `--lang fr|en|de|es` ou variable d'environnement `ALLINONE_LANG`.
+## Features
 
-### Traductions
+**PDF**
+- **Images → PDF**: one page per image (multi-page TIFF supported), with page size, orientation and margin.
+- **Edit and merge PDFs**: delete, add, reorder and rotate pages, and merge several PDFs and images into one document.
+- **Compress PDFs**: shrink scanned or photo-heavy PDFs by downsampling their images. Text stays sharp and selectable.
+- **Split PDFs**: one page per file, every N pages, or by ranges such as `1-3, 4-7, 8-`.
+- **PDF → images**: PNG, JPEG, WebP, BMP, GIF or TIFF, at the resolution you choose.
 
-Le texte français sert de clé : dans le code, `L.T("Ajouter des images")` (ou `L.T("{0} page(s)", n)` avec des valeurs) ;
-dans les fichiers `.axaml`, les textes écrits en dur sont traduits automatiquement au chargement de la fenêtre. Les traductions
-sont dans `src/AllInOne.Core/Localization/en.json`, `de.json` et `es.json`. Le test `LocalizationTests` échoue si un texte
-du code ou des écrans n'a pas de traduction dans l'une des langues, ou si les marqueurs `{0}`… ne correspondent pas.
+**Images**
+- **Convert images** between PNG, JPEG, WebP, AVIF, BMP, GIF and TIFF, with optional resizing.
+- iPhone **HEIC** photos can be opened everywhere in the app.
 
-## Structure
+**Video and audio** (uses [FFmpeg](https://ffmpeg.org/))
+- **Convert videos** to MP4, MKV, WebM, AVI, OGG, MOV or **animated GIF**. You can set quality and maximum resolution, remove the sound, or change only the container without re-encoding.
+- **Convert audio** to MP3, WAV, AIFF, FLAC, OGG, Opus or M4A, and extract the sound from videos.
+- **Trim** a section (start and end) of any video or audio file.
+- **Extract frames** from a video as PNG or JPEG, either every frame or one every N seconds, over the whole video or between two positions.
+- Each file shows its details (duration, resolution, codecs, bitrate, size), its own progress bar and an estimate of the time left.
 
-| Projet | Rôle |
+Your original files are never modified.
+
+| Compress PDFs | Split a PDF | Convert audio |
+| --- | --- | --- |
+| ![Compress PDFs](docs/screenshots/compress-pdf.png) | ![Split a PDF](docs/screenshots/split-pdf.png) | ![Convert audio](docs/screenshots/audio.png) |
+
+## Download
+
+Get the latest version from the [Releases page](../../releases/latest).
+
+| File | System | Requirements |
+| --- | --- | --- |
+| `LocalConvert-<version>-win-x64.zip` | Windows 10/11 (light) | [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0); Windows offers to install it on first launch |
+| `LocalConvert-<version>-win-x64-autonome.zip` | Windows 10/11 (standalone) | none |
+| `LocalConvert-<version>-macos-apple-silicon.zip` | Mac with M1, M2, M3, M4… (macOS 12+) | none |
+| `LocalConvert-<version>-macos-intel.zip` | Mac with Intel processor (macOS 12+) | none |
+| `LocalConvert-<version>-linux-x64.tar.gz` | Linux x64 | none (the usual X11 desktop libraries) |
+
+- **Windows:** unzip the archive and run `LocalConvert.exe`.
+- **macOS:** unzip the archive and drag **LocalConvert.app** into Applications. The app is not signed by Apple, which
+  requires a paid developer account, so macOS blocks it the first time. Try to open it once, then go to
+  **System Settings → Privacy & Security** and click **Open Anyway**. On macOS versions before Sequoia, right-click the app
+  and choose **Open** instead. From Terminal, you can also run
+  `xattr -dr com.apple.quarantine /Applications/LocalConvert.app`.
+- **Linux:** run `tar -xzf LocalConvert-<version>-linux-x64.tar.gz`, then run `./LocalConvert` in the extracted folder.
+
+### FFmpeg (video and audio)
+
+Video and audio conversions use FFmpeg, which runs as a separate program. It is not bundled with the app, because it
+would add about 200 MB.
+
+- **Windows:** the app offers to download it on your first conversion (a GPL build from
+  [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds)).
+- **macOS:** install it with [Homebrew](https://brew.sh): `brew install ffmpeg`.
+- **Linux:** install it with your package manager: `sudo apt install ffmpeg` (Debian, Ubuntu), `sudo dnf install ffmpeg`
+  (Fedora) or `sudo pacman -S ffmpeg` (Arch).
+
+If FFmpeg is already installed (next to the app or in the `PATH`), the app uses it. You can also give an exact path in
+the `LOCALCONVERT_FFMPEG` environment variable.
+
+## Language
+
+LocalConvert starts in your system language, or in English if that language isn't available. You can change it in the
+top-right corner of the window, and the app remembers your choice. On the command line, use `--lang en|fr|de|es` or set the
+`LOCALCONVERT_LANG` environment variable.
+
+## Command line
+
+Each archive also includes `localconvert-cli`, a command-line version of the PDF, image, video and audio tools:
+
+```bash
+localconvert-cli images2pdf album.pdf photo1.jpg photo2.png --size A4 --margin 10
+localconvert-cli merge all.pdf part1.pdf part2.pdf appendix.png
+localconvert-cli delete report.pdf 2,5-7 -o short_report.pdf
+localconvert-cli split report.pdf parts/ --ranges "1-3, 4-7, 8-"
+localconvert-cli compress scan.pdf scan_small.pdf --level strong
+localconvert-cli pdf2img report.pdf images/ --format png --dpi 200 --pages 1-3
+localconvert-cli convert out/ *.png --format webp --quality 85 --max-width 1920
+localconvert-cli video out/ movie.avi clip.mov --format mp4 --quality high --max-height 1080
+localconvert-cli video out/ movie.mp4 --format gif --start 0:12 --end 0:18 --quality low
+localconvert-cli audio out/ movie.mp4 --format flac            # extract the sound of a video
+localconvert-cli frames out/ movie.mp4 --format jpg --fps 1 --start 1:00 --end 2:00
+```
+
+Run `localconvert-cli --help` for every command and option.
+
+## Building from source
+
+You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+```bash
+dotnet run --project src/AllInOne.App          # desktop app
+dotnet run --project src/AllInOne.Cli -- --help # command line
+dotnet test                                     # tests
+dotnet publish src/AllInOne.App -c Release -r osx-arm64 --self-contained true -o publish   # or win-x64, osx-x64, linux-x64
+```
+
+| Project | Role |
 | --- | --- |
-| `src/AllInOne.Core` | Bibliothèque multiplateforme qui contient toute la logique (utilisable depuis n'importe quel programme .NET). |
-| `src/AllInOne.App` | Application de bureau [Avalonia](https://avaloniaui.net/) (Windows, macOS, Linux), une page par outil. |
-| `src/AllInOne.Cli` | Outil en ligne de commande `allinone-cli` (Windows, Linux, macOS). |
-| `tests/AllInOne.Core.Tests` | Tests automatisés (xUnit). |
+| `src/AllInOne.Core` | Cross-platform library with all the conversion logic and the translations. |
+| `src/AllInOne.App` | Desktop app built with [Avalonia](https://avaloniaui.net/). |
+| `src/AllInOne.Cli` | `localconvert-cli` command-line tool. |
+| `tests/AllInOne.Core.Tests` | Automated tests (xUnit). |
 
-## Utiliser l'application de bureau
+The project folders keep their original `AllInOne` name. Every merge into `main` publishes a release automatically for
+all five downloads above.
 
-Prérequis : Windows 10/11, macOS 12 ou plus récent, ou Linux x64, et le [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
+**Translations:** the French text is the key. In code, write `L.T("Ajouter des images")`, or `L.T("{0} page(s)", n)`
+when the text contains values. Text written directly in `.axaml` files is translated when the window loads. The
+translations are in `src/AllInOne.Core/Localization/en.json`, `de.json` and `es.json`. A test fails when a text has no
+translation.
 
-```powershell
-dotnet run --project src/AllInOne.App
-```
+## Libraries and licences
 
-Pour obtenir un dossier prêt à copier (`AllInOne.exe` avec ses DLL à côté) :
-
-```powershell
-dotnet publish src/AllInOne.App -c Release -o publish
-```
-
-La compilation produit volontairement **plusieurs fichiers** (exe + DLL) plutôt qu'un seul exe géant. Ajoutez `-r win-x64`,
-`-r osx-arm64`, `-r osx-x64` ou `-r linux-x64` pour ne garder que les bibliothèques natives d'un système. Par défaut, elle dépend du runtime .NET installé ; ajoutez `--self-contained true` pour
-embarquer .NET (dossier environ 4 fois plus lourd, mais rien à installer).
-
-**Releases automatiques :** à chaque fusion d'une pull request dans `main`, le workflow `release` publie une
-[release GitHub](../../releases) numérotée `v1.0.N` (N s'incrémente à chaque fois). Chaque archive contient l'application `AllInOne`, la ligne de commande
-`allinone-cli` et leurs bibliothèques :
-
-| Archive | Système | Prérequis |
+| Library | Used for | Licence |
 | --- | --- | --- |
-| `AllInOne-<version>-win-x64.zip` (légère) | Windows 10/11 | [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
-| `AllInOne-<version>-win-x64-autonome.zip` | Windows 10/11 | aucun |
-| `AllInOne-<version>-macos-apple-silicon.zip` | Mac M1, M2, M3, M4… (macOS 12+) | aucun |
-| `AllInOne-<version>-macos-intel.zip` | Mac Intel (macOS 12+) | aucun |
-| `AllInOne-<version>-linux-x64.tar.gz` | Linux x64 | aucun (bibliothèques graphiques X11 habituelles d'un bureau) |
+| [Avalonia](https://github.com/AvaloniaUI/Avalonia) | User interface (Windows, macOS, Linux) | MIT |
+| [PDFsharp](https://github.com/empira/PDFsharp) 6.2.4 | Creating and editing PDFs | MIT |
+| [PDFtoImage](https://github.com/sungaila/PDFtoImage) 5.2.1 | Rendering PDF pages | MIT |
+| [PDFium](https://pdfium.googlesource.com/pdfium/) | PDF engine used by PDFtoImage | BSD-3 / Apache 2.0 |
+| [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphics for Avalonia and PDFtoImage | MIT |
+| [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Reading and converting images | Apache 2.0 |
+| [FFmpeg](https://ffmpeg.org/) (downloaded separately, not bundled) | Video and audio conversion | GPL (separate program) |
 
-Sur macOS, `AllInOne.app` est signée « ad hoc » mais pas par Apple (il faudrait un compte développeur payant) : à la première
-ouverture, macOS la bloque. Allez dans **Réglages Système → Confidentialité et sécurité → Ouvrir quand même** (ou, avant
-macOS Sequoia, clic droit sur l'app → **Ouvrir**). En ligne de commande : `xattr -dr com.apple.quarantine /Applications/AllInOne.app`.
+PDFsharp is pinned to **6.2.4** on purpose: version 6.5 and later are AGPL-3.0, with a licence check at startup.
+PDFtoImage stays on **5.2.1** because it uses SkiaSharp 3, like Avalonia 11.
 
-L'essentiel du poids restant vient des moteurs natifs : ImageMagick (≈ 25 Mo), SkiaSharp (≈ 12 Mo) et PDFium (≈ 7 Mo).
+## Known limitations
 
-L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, cartes arrondies, barre de titre sombre) avec une navigation latérale entre les outils :
-
-1. **Images → PDF** : ajoutez ou glissez des images, ordonnez-les (glisser-déposer, Monter/Descendre, Trier par nom), choisissez la taille de page (A4, A3, A5, Lettre, Légal ou taille de l'image), l'orientation et la marge.
-2. **Modifier / fusionner des PDF** : ouvrez un ou plusieurs PDF et/ou images ; toutes les pages s'affichent en vignettes. Sélectionnez-les pour les supprimer (touche Suppr), les pivoter, les déplacer ou glissez-les à la souris. Les fichiers ajoutés sont insérés après la page sélectionnée. « Enregistrer sous » produit le PDF final.
-3. **Compresser un PDF** : ajoutez un ou plusieurs PDF et choisissez le niveau (légère 200 ppp, moyenne 150 ppp, forte 100 ppp). Les images sont réduites et recompressées en JPEG ; le texte et les dessins restent vectoriels. Chaque ligne montre la taille avant et après. Un PDF déjà optimisé est simplement copié.
-4. **Découper un PDF** : une page par fichier, toutes les N pages, ou selon des plages où chaque plage donne un fichier (`1-3, 4-7, 8-`).
-5. **PDF → images** : choisissez un PDF, les pages (ex. `1-3,5`, vide = toutes), le format, la résolution et la qualité.
-6. **Convertir des images** : convertissez un lot d'images (dont HEIC) vers un autre format, avec largeur/hauteur maximales optionnelles.
-7. **Vidéos et GIF** : ajoutez ou glissez des vidéos (ou des GIF), choisissez le format, dont le GIF animé, la qualité et la résolution maximale. Les champs Début et Fin gardent seulement un extrait (ex. de `1:30` à `2:45`). Les formats « Images PNG » et « Images JPEG » extraient les images de la vidéo (toutes, ou 1 par seconde, 1 toutes les 5 s…) dans un dossier `<nom>_images` ; au-delà d'environ 3 000 images, une confirmation est demandée. Un bouton « Arrêter » interrompt la conversion.
-   Chaque ligne affiche les caractéristiques du fichier (durée, résolution, codecs, images/s, débit, taille) puis, pendant la conversion, sa propre barre de progression et le temps restant estimé. Un fichier en échec n'arrête pas les suivants.
-8. **Convertir des sons** : MP3, WAV, AIFF, FLAC, OGG Vorbis, Opus ou M4A (AAC), avec qualité, fréquence d'échantillonnage et mono/stéréo. Les vidéos déposées ici donnent leur piste audio. Début et Fin permettent de couper un extrait. Comme pour les vidéos, chaque ligne montre durée, codec, débit, fréquence, canaux et taille, puis l'avancement et le temps restant.
-
-### FFmpeg (conversion vidéo et audio)
-
-Les conversions vidéo et audio utilisent [FFmpeg](https://ffmpeg.org/), lancé comme programme séparé. Il n'est **pas inclus** dans l'exe (il pèserait environ 200 Mo de plus) :
-à la première conversion, l'application propose de le télécharger (build GPL de [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds))
-dans `%LOCALAPPDATA%\AllInOne\ffmpeg`. Si FFmpeg est déjà installé (à côté de l'exe ou dans le `PATH`), il est utilisé directement.
-Sur **macOS**, installez-le avec [Homebrew](https://brew.sh) (`brew install ffmpeg`) ; sur **Linux**, avec le gestionnaire de paquets
-(`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, `sudo pacman -S ffmpeg`). L'application le trouve aussi dans
-`/opt/homebrew/bin`, `/usr/local/bin` et `/usr/bin` même quand elle est lancée depuis le Finder.
-La variable d'environnement `ALLINONE_FFMPEG` permet d'indiquer un chemin précis.
-
-| Format | Vidéo | Audio |
-| --- | --- | --- |
-| MP4, MKV, MOV | H.264 (libx264) | AAC |
-| WebM | VP9 | Opus |
-| AVI | MPEG-4 Part 2 (Xvid) | MP3 |
-| OGG | Theora | Vorbis |
-
-## Utiliser la ligne de commande
-
-```bash
-dotnet run --project src/AllInOne.Cli -- --help
-```
-
-Exemples (les pages sont numérotées à partir de 1) :
-
-```bash
-allinone-cli images2pdf album.pdf photo1.jpg photo2.png --size A4 --margin 10
-allinone-cli merge tout.pdf partie1.pdf partie2.pdf annexe.png
-allinone-cli delete rapport.pdf 2,5-7 -o rapport_court.pdf
-allinone-cli reorder rapport.pdf 3,1,2 -o rapport_reordonne.pdf
-allinone-cli move rapport.pdf 5 1 -o rapport.pdf
-allinone-cli insert rapport.pdf 3 couverture.pdf schema.png -o rapport_complet.pdf
-allinone-cli rotate scan.pdf 1-2 90 -o scan_droit.pdf
-allinone-cli extract rapport.pdf 4-6 -o extrait.pdf
-allinone-cli split rapport.pdf pages/
-allinone-cli split rapport.pdf parties/ --ranges "1-3, 4-7, 8-"   # un fichier par plage
-allinone-cli split rapport.pdf paquets/ --every 10
-allinone-cli compress scan.pdf scan_leger.pdf --level forte
-allinone-cli pdf2img rapport.pdf images/ --format png --dpi 200 --pages 1-3
-allinone-cli convert sortie/ *.png --format webp --quality 85 --max-width 1920
-allinone-cli video sortie/ film.avi clip.mov --format mp4 --quality haute --max-height 1080
-allinone-cli video sortie/ film.mp4 --format mkv --copy        # changement de conteneur, sans réencodage
-allinone-cli audio sortie/ morceau.wav concert.aiff --format mp3 --quality haute
-allinone-cli audio sortie/ film.mp4 --format flac                # extrait le son d'une vidéo
-allinone-cli video sortie/ film.mp4 --format gif --start 0:12 --end 0:18 --quality faible
-allinone-cli frames sortie/ film.mp4 --format jpg --fps 1 --start 1:00 --end 2:00   # 1 image par seconde
-allinone-cli frames sortie/ clip.mov                                               # toutes les images, en PNG
-allinone-cli audio sortie/ concert.wav --format mp3 --start 1:30 --end 4:05
-allinone-cli convert sortie/ IMG_0001.HEIC IMG_0002.HEIC --format jpg
-```
-
-## Bibliothèques utilisées et licences
-
-Toutes les dépendances sont sous licence permissive, compatibles avec un usage personnel ou commercial :
-
-| Bibliothèque | Usage | Licence |
-| --- | --- | --- |
-| [PDFsharp](https://github.com/empira/PDFsharp) 6.2.4 | Création et modification des PDF | MIT |
-| [Avalonia](https://github.com/AvaloniaUI/Avalonia) | Interface graphique (Windows, macOS, Linux) | MIT |
-| [PDFtoImage](https://github.com/sungaila/PDFtoImage) 5.2.1 | Rendu des pages PDF en images | MIT |
-| [PDFium](https://pdfium.googlesource.com/pdfium/) (binaires bblanchon) | Moteur de rendu PDF utilisé par PDFtoImage | BSD-3 / Apache 2.0 |
-| [SkiaSharp](https://github.com/mono/SkiaSharp) | Graphismes utilisés par Avalonia et PDFtoImage | MIT |
-| [Magick.NET](https://github.com/dlemstra/Magick.NET) (ImageMagick) | Lecture et conversion des images | Apache 2.0 |
-| [FFmpeg](https://ffmpeg.org/) (téléchargé à part, non inclus) | Conversion vidéo et audio | GPL (programme séparé) |
-
-> **Attention :** PDFsharp est volontairement figé en version **6.2.4**. Les versions 6.5 et suivantes sont passées
-> sous licence AGPL-3.0 avec une vérification de licence au démarrage. Ne mettez pas à jour ce paquet sans vérifier sa licence.
->
-> PDFtoImage reste en **5.2.1**, qui utilise SkiaSharp 3 comme Avalonia 11 (la 5.4 passe à SkiaSharp 4,
-> incompatible avec l'interface). Vérifiez la version de SkiaSharp avant de le mettre à jour.
-
-FFmpeg est un programme indépendant, exécuté comme processus externe et téléchargé par l'utilisateur : il n'est ni lié ni
-redistribué avec AllInOne, dont la licence n'est donc pas affectée par la GPL de FFmpeg.
-
-ImageSharp n'a pas été retenu car sa licence actuelle (Six Labors Split License) n'est pas totalement libre pour un usage commercial.
-
-## Limites connues
-
-- Les PDF protégés par mot de passe ne sont pas pris en charge pour la modification.
-- Les versions macOS ne sont pas signées par Apple (voir plus haut pour les ouvrir).
-- FFmpeg n'est téléchargé automatiquement que sous Windows ; sur macOS et Linux, il s'installe avec le gestionnaire de paquets.
-
-## Tests
-
-```bash
-dotnet test
-```
+- Password-protected PDFs cannot be edited.
+- The macOS app is not signed by Apple (see [Download](#download) to open it).
+- FFmpeg is downloaded automatically only on Windows.

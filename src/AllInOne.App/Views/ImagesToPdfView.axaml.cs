@@ -64,12 +64,12 @@ public partial class ImagesToPdfView : UserControl
     {
         if (_items.Count == 0)
         {
-            await Dialog.Show(MainWindow.Of(this), L.T("Ajoutez au moins une image."), "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("Ajoutez au moins une image."), "LocalConvert");
             return;
         }
         if (!double.TryParse(MarginBox.Text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var margin) || margin < 0)
         {
-            await Dialog.Show(MainWindow.Of(this), L.T("La marge doit être un nombre positif (en millimètres)."), "AllInOne");
+            await Dialog.Show(MainWindow.Of(this), L.T("La marge doit être un nombre positif (en millimètres)."), "LocalConvert");
             return;
         }
 

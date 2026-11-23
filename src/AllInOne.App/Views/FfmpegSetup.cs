@@ -6,7 +6,7 @@ using AllInOne.Core.Localization;
 namespace AllInOne.App.Views;
 
 /// <summary>
-/// Affichage de l'état de FFmpeg (partagé par les écrans vidéo et audio). Sous Windows, AllInOne le télécharge à la
+/// Affichage de l'état de FFmpeg (partagé par les écrans vidéo et audio). Sous Windows, LocalConvert le télécharge à la
 /// demande ; sous macOS et Linux, il indique comment l'installer (Homebrew, gestionnaire de paquets).
 /// </summary>
 internal static class FfmpegSetup

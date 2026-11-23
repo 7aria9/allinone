@@ -51,7 +51,7 @@ public static class VideoConverter
 public sealed class FfmpegNotFoundException : InvalidOperationException
 {
     public FfmpegNotFoundException()
-        : base(L.T("FFmpeg est introuvable. Installez-le (ou laissez AllInOne le télécharger) puis réessayez.")) { }
+        : base(L.T("FFmpeg est introuvable. Installez-le (ou laissez LocalConvert le télécharger) puis réessayez.")) { }
 }
 
 public sealed class VideoConversionException(string file, string summary, string fullLog)
