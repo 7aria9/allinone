@@ -22,22 +22,7 @@ public partial class ConvertVideosView : UserControl
         IsVisibleChanged += (_, _) => { if (IsVisible) RefreshFfmpegStatus(); };
     }
 
-    private void RefreshFfmpegStatus()
-    {
-        var path = FfmpegLocator.Find();
-        if (path is not null)
-        {
-            FfmpegStatus.Text = $"✓ FFmpeg prêt : {path}";
-            DownloadButton.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            FfmpegStatus.Text = FfmpegDownloader.IsSupportedPlatform
-                ? "FFmpeg n'est pas encore installé. Il sera téléchargé à la première conversion (environ 200 Mo, une seule fois)."
-                : "FFmpeg est introuvable : installez-le et ajoutez-le au PATH.";
-            DownloadButton.Visibility = FfmpegDownloader.IsSupportedPlatform ? Visibility.Visible : Visibility.Collapsed;
-        }
-    }
+    private void RefreshFfmpegStatus() => FfmpegSetup.RefreshStatus(FfmpegStatus, DownloadButton);
 
     private void AddFiles(string[] paths, int index)
     {
@@ -68,15 +53,10 @@ public partial class ConvertVideosView : UserControl
         if (folder is not null) OutputDir.Text = folder;
     }
 
-    private async void Download_Click(object sender, RoutedEventArgs e) => await DownloadFfmpegAsync();
-
-    private async Task<bool> DownloadFfmpegAsync()
+    private async void Download_Click(object sender, RoutedEventArgs e)
     {
-        var window = MainWindow.Of(this);
-        var ok = await window.RunBusyAsync("Téléchargement de FFmpeg (environ 200 Mo)…",
-            (p, ct) => FfmpegDownloader.DownloadAsync(p, ct), "FFmpeg est installé.", cancellable: true);
+        await FfmpegSetup.DownloadAsync(this);
         RefreshFfmpegStatus();
-        return ok && FfmpegLocator.Find() is not null;
     }
 
     private async void Convert_Click(object sender, RoutedEventArgs e)
@@ -86,19 +66,9 @@ public partial class ConvertVideosView : UserControl
         var outputDir = OutputDir.Text.Trim();
         if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
 
-        if (FfmpegLocator.Find() is null)
-        {
-            if (!FfmpegDownloader.IsSupportedPlatform)
-            {
-                Dialog.Show(owner, "FFmpeg est introuvable. Installez-le puis réessayez.", "AllInOne",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            var answer = Dialog.Show(owner,
-                "La conversion vidéo utilise FFmpeg, un logiciel libre séparé.\n\nLe télécharger maintenant ? (environ 200 Mo, une seule fois)",
-                "Installer FFmpeg", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
-            if (answer != MessageBoxResult.Yes || !await DownloadFfmpegAsync()) return;
-        }
+        var ready = await FfmpegSetup.EnsureAsync(this);
+        RefreshFfmpegStatus();
+        if (!ready) return;
 
         var format = Enum.Parse<VideoFormat>((string)((ComboBoxItem)Format.SelectedItem).Tag);
         var height = int.Parse((string)((ComboBoxItem)Resolution.SelectedItem).Tag);
