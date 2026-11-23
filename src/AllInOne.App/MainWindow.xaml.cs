@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace AllInOne.App;
 
@@ -8,13 +9,21 @@ public partial class MainWindow : Window
 {
     public MainWindow() => InitializeComponent();
 
+    private void Nav_Checked(object sender, RoutedEventArgs e)
+    {
+        if (Pages is null || sender is not RadioButton { Tag: string tag }) return; // pendant InitializeComponent
+        var index = int.Parse(tag);
+        for (var i = 0; i < Pages.Children.Count; i++)
+            Pages.Children[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     /// <summary>
-    /// Exécute une tâche longue en arrière-plan : désactive les onglets, affiche la progression
+    /// Exécute une tâche longue en arrière-plan : désactive l'interface, affiche la progression
     /// et présente les erreurs à l'utilisateur. Renvoie true si la tâche s'est terminée sans erreur.
     /// </summary>
     public async Task<bool> RunBusyAsync(string message, Func<IProgress<double>, Task> work, string? successMessage = null)
     {
-        Tabs.IsEnabled = false;
+        Pages.IsEnabled = Nav.IsEnabled = false;
         StatusText.Text = message;
         Progress.Value = 0;
         Progress.Visibility = Visibility.Visible;
@@ -28,13 +37,13 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             StatusText.Text = "Échec : " + ex.Message;
-            MessageBox.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Error);
+            Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
         finally
         {
             Progress.Visibility = Visibility.Collapsed;
-            Tabs.IsEnabled = true;
+            Pages.IsEnabled = Nav.IsEnabled = true;
         }
     }
 
@@ -43,8 +52,8 @@ public partial class MainWindow : Window
     /// <summary>Propose d'ouvrir le fichier ou le dossier produit.</summary>
     public void OfferToOpen(string path, string what)
     {
-        var answer = MessageBox.Show(this, $"{what}\n\nVoulez-vous l'ouvrir ?", "AllInOne",
-            MessageBoxButton.YesNo, MessageBoxImage.Information);
+        var answer = Dialog.Show(this, $"{what}\n\nVoulez-vous l'ouvrir ?", "C'est fait !",
+            MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
         if (answer != MessageBoxResult.Yes) return;
         try
         {
@@ -53,7 +62,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Dialog.Show(this, ex.Message, "AllInOne", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

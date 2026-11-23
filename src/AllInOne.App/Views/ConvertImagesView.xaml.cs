@@ -15,6 +15,7 @@ public partial class ConvertImagesView : UserControl
     {
         InitializeComponent();
         Files.ItemsSource = _items;
+        _items.CollectionChanged += (_, _) => EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FormatChoices.Fill(Format, ImageFormatKind.Jpeg);
         ListTools.EnableDragDrop(Files, _items, AddFiles);
     }
@@ -58,12 +59,12 @@ public partial class ConvertImagesView : UserControl
     private async void Convert_Click(object sender, RoutedEventArgs e)
     {
         var owner = Window.GetWindow(this);
-        if (_items.Count == 0) { MessageBox.Show(owner, "Ajoutez au moins une image.", "AllInOne"); return; }
+        if (_items.Count == 0) { Dialog.Show(owner, "Ajoutez au moins une image.", "AllInOne"); return; }
         var outputDir = OutputDir.Text.Trim();
-        if (outputDir.Length == 0) { MessageBox.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
+        if (outputDir.Length == 0) { Dialog.Show(owner, "Choisissez un dossier de sortie.", "AllInOne"); return; }
         if (!TryParseSize(MaxWidthBox.Text, out var maxW) || !TryParseSize(MaxHeightBox.Text, out var maxH))
         {
-            MessageBox.Show(owner, "Les dimensions maximales doivent être des nombres entiers positifs.", "AllInOne");
+            Dialog.Show(owner, "Les dimensions maximales doivent être des nombres entiers positifs.", "AllInOne");
             return;
         }
 

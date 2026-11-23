@@ -40,7 +40,7 @@ L'intégration continue GitHub Actions produit aussi ces exécutables (artefact 
 `AllInOne-<version>-win-x64.exe` (application) et `allinone-cli-<version>-win-x64.exe` (ligne de commande).
 Aucune installation de .NET n'est nécessaire pour les lancer.
 
-Onglets :
+L'interface reprend le thème sombre de Scan-Online (dégradé rose → violet, cartes arrondies, barre de titre sombre) avec une navigation latérale entre les quatre outils :
 
 1. **Images → PDF** : ajoutez ou glissez des images, ordonnez-les (glisser-déposer, Monter/Descendre, Trier par nom), choisissez la taille de page (A4, A3, A5, Lettre, Légal ou taille de l'image), l'orientation et la marge.
 2. **Modifier / fusionner des PDF** : ouvrez un ou plusieurs PDF et/ou images ; toutes les pages s'affichent en vignettes. Sélectionnez-les pour les supprimer (touche Suppr), les pivoter, les déplacer ou glissez-les à la souris. Les fichiers ajoutés sont insérés après la page sélectionnée. « Enregistrer sous » produit le PDF final.
