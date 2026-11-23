@@ -78,8 +78,36 @@ jobs:
           name: release-linux
           path: release/
 
+  macos:
+    # Les fichiers Mac sont préparés sous Linux (compilation croisée et signature ad hoc avec rcodesign) :
+    # les machines macOS de GitHub sont souvent indisponibles.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Installation de rcodesign (signature ad hoc depuis Linux)
+        run: ./.github/scripts/install-rcodesign.sh
+      - name: Publication et paquets .app
+        run: |
+          mkdir -p release
+          for pair in osx-arm64:apple-silicon osx-x64:intel; do
+            rid=${pair%%:*}; name=${pair##*:}
+            dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
+            dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
+            mkdir -p dist/$rid
+            ./.github/scripts/package-macos.sh publish/$rid $VERSION dist/$rid/LocalConvert.zip
+            cp dist/$rid/LocalConvert.zip release/LocalConvert-$VERSION-macos-$name.zip
+          done
+          ls -l release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: release/
+
   release:
-    needs: [windows, linux]
+    needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     concurrency:
       group: release
@@ -97,8 +125,6 @@ jobs:
         run: |
           ls -l release
           cat > notes.md <<NOTES
-          > Les fichiers Mac sont en préparation et seront ajoutés à cette page dans quelques minutes.
-
 
           ## Téléchargement
 
@@ -107,6 +133,8 @@ jobs:
           | Windows (léger) | \`LocalConvert-$VERSION-win-x64.zip\` : nécessite le [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows propose de l'installer au premier lancement s'il manque) |
           | Windows (autonome) | \`LocalConvert-$VERSION-win-x64-autonome.zip\` : plus lourd, rien à installer |
           | Linux x64 | \`LocalConvert-$VERSION-linux-x64.tar.gz\` |
+          | Mac Apple Silicon (M1, M2, M3, M4…) | \`LocalConvert-$VERSION-macos-apple-silicon.zip\` |
+          | Mac Intel | \`LocalConvert-$VERSION-macos-intel.zip\` |
 
           **Windows** : décompressez l'archive puis lancez \`LocalConvert.exe\` (\`localconvert-cli.exe\` pour la ligne de commande).
 
@@ -128,50 +156,3 @@ jobs:
           NOTES
           sed -i 's/^          //' notes.md
           gh release create "v$VERSION" release/* --title "LocalConvert $VERSION" --target "$GITHUB_SHA" --notes-file notes.md --generate-notes
-
-  macos:
-    # Les machines macOS de GitHub mettent parfois longtemps à être attribuées : la release est publiée
-    # d'abord avec Windows et Linux, et les fichiers Mac y sont ajoutés quand ils sont prêts.
-    needs: release
-    runs-on: macos-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - name: Publication et paquets .app
-        run: |
-          mkdir -p release
-          for pair in osx-arm64:apple-silicon osx-x64:intel; do
-            rid=${pair%%:*}; name=${pair##*:}
-            dotnet publish src/AllInOne.Cli -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
-            dotnet publish src/AllInOne.App -c Release -r $rid --self-contained true -p:DebugType=none -p:Version=$VERSION -o publish/$rid
-            mkdir -p dist/$rid
-            ./.github/scripts/package-macos.sh publish/$rid $VERSION dist/$rid/LocalConvert.zip
-            cp dist/$rid/LocalConvert.zip release/LocalConvert-$VERSION-macos-$name.zip
-          done
-          ./.github/scripts/smoke-test.sh dist/osx-arm64/LocalConvert.app/Contents/MacOS
-          ls -l release
-      - name: Ajout des fichiers Mac à la release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release upload "v$VERSION" release/*
-          gh release view "v$VERSION" --json body -q .body > notes.md
-          python3 - "$VERSION" <<'PY'
-          import sys
-          v = sys.argv[1]
-          s = open("notes.md").read()
-          rows = (f"| Mac Apple Silicon (M1, M2, M3, M4…) | `LocalConvert-{v}-macos-apple-silicon.zip` |\n"
-                  f"| Mac Intel | `LocalConvert-{v}-macos-intel.zip` |\n")
-          lines = [l for l in s.splitlines(True) if not l.startswith("> Les fichiers Mac")]
-          out = []
-          for l in lines:
-              out.append(l)
-              if l.startswith("| Linux x64 |"):
-                  out.append(rows)
-          open("notes.md", "w").write("".join(out))
-          PY
-          gh release edit "v$VERSION" --notes-file notes.md
