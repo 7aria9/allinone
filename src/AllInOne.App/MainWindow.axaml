@@ -10,6 +10,8 @@
             <DockPanel>
                 <ComboBox x:Name="LanguageBox" DockPanel.Dock="Right" VerticalAlignment="Center" MinWidth="130"
                           ToolTip.Tip="Langue de l'application" />
+                <Button x:Name="HelpButton" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                        Content="❔  Aide" ToolTip.Tip="Mode d'emploi de chaque outil et informations sur LocalConvert (F1)" />
                 <Image DockPanel.Dock="Left" Source="avares://LocalConvert/Assets/localconvert-128.png" Width="56" Height="56"
                        Margin="-6,0,8,0" VerticalAlignment="Center" />
                 <StackPanel>

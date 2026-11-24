@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Platform.Storage;
@@ -22,6 +24,7 @@ public partial class MainWindow : Window
         LanguageBox.SelectedIndex = L.Languages.ToList().FindIndex(l => l.Code == L.Language);
         LanguageBox.SelectionChanged += Language_Changed;
         Translator.Apply(this);
+        BuildHelpMenu();
         VersionText.Text = "v" + AppVersion;
         // « LocalConvert v1.0.N : PDF, images… » (la version juste après le nom, dans toutes les langues)
         Title = Title is { } t && t.StartsWith("LocalConvert", StringComparison.Ordinal)
@@ -51,7 +54,59 @@ public partial class MainWindow : Window
         replacement.SelectPage(page);
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.MainWindow = replacement;
         replacement.Show();
+        _help?.Close();
         Close();
+    }
+
+    private HelpWindow? _help;
+
+    /// <summary>Menu « Aide » de l'en-tête : aide de l'écran affiché (F1), guide complet et « À propos ».</summary>
+    private void BuildHelpMenu()
+    {
+        var screenHelp = new MenuItem { Header = L.T("Aide sur cet écran"), InputGesture = new KeyGesture(Key.F1) };
+        screenHelp.Click += (_, _) => ShowHelp(HelpContent.TopicForPage(CurrentPage));
+        var guide = new MenuItem { Header = L.T("Guide d'utilisation") };
+        guide.Click += (_, _) => ShowHelp(0);
+        var faq = new MenuItem { Header = L.T("Questions fréquentes") };
+        faq.Click += (_, _) => ShowHelp(int.MaxValue);
+        var about = new MenuItem { Header = L.T("À propos de LocalConvert") };
+        about.Click += async (_, _) => await new AboutWindow().ShowDialog(this);
+        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
+        menu.Items.Add(screenHelp);
+        menu.Items.Add(guide);
+        menu.Items.Add(faq);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(about);
+        HelpButton.Flyout = menu;
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.F1),
+            Command = new RelayCommand(() => ShowHelp(HelpContent.TopicForPage(CurrentPage))),
+        });
+    }
+
+    private int CurrentPage => Pages.Children.ToList().FindIndex(c => c.IsVisible);
+
+    /// <summary>Ouvre l'aide sur la rubrique demandée (une seule fenêtre d'aide, ramenée au premier plan si déjà ouverte).</summary>
+    internal HelpWindow ShowHelp(int topic)
+    {
+        if (_help is null)
+        {
+            _help = new HelpWindow();
+            _help.Closed += (_, _) => _help = null;
+            _help.Show(this);
+        }
+        _help.SelectTopic(topic);
+        _help.Activate();
+        return _help;
+    }
+
+    /// <summary>Commande minimale pour les raccourcis clavier.</summary>
+    private sealed class RelayCommand(Action action) : System.Windows.Input.ICommand
+    {
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) => action();
     }
 
     private void SelectPage(int index)
@@ -96,6 +151,30 @@ public partial class MainWindow : Window
             }
         }
         SelectPage(0);
+
+        // Aide (chaque rubrique) et « À propos »
+        var help = ShowHelp(0);
+        for (var t = 0; t < help.TopicCount; t++)
+        {
+            help.SelectTopic(t);
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            help.UpdateLayout();
+            if (screenshotDirectory is not null && t is 0 or 7) Capture(help, Path.Combine(screenshotDirectory, $"aide-{t}.png"));
+        }
+        help.Close();
+        var about = new AboutWindow();
+        about.Show(this);
+        await Task.Delay(150);
+        about.UpdateLayout();
+        if (screenshotDirectory is not null) Capture(about, Path.Combine(screenshotDirectory, "a-propos.png"));
+        about.Close();
+    }
+
+    private static void Capture(Window window, string file)
+    {
+        using var bitmap = new RenderTargetBitmap(new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height));
+        bitmap.Render(window);
+        bitmap.Save(file);
     }
 
     /// <summary>
