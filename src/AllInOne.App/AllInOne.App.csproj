@@ -36,6 +36,8 @@
     <!-- Icône de la fenêtre et de l'en-tête. -->
     <AvaloniaResource Include="..\..\assets\icon\localconvert.ico" Link="Assets\localconvert.ico" />
     <AvaloniaResource Include="..\..\assets\icon\localconvert-128.png" Link="Assets\localconvert-128.png" />
+    <!-- Texte de la licence, affiché dans « À propos ». -->
+    <AvaloniaResource Include="..\..\LICENSE" Link="Assets\LICENSE.txt" />
   </ItemGroup>
 
   <ItemGroup>
